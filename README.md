@@ -44,9 +44,25 @@ The full list is on the [Features](https://github.com/Moonfin-Client/Smart-TV/wi
 
 ## Screenshots
 
-<img width="1950" height="1060" alt="Home screen" src="https://github.com/user-attachments/assets/660712d2-1893-4c71-afff-5ddc9aa674e0" />
-<img width="1950" height="1060" alt="Details screen" src="https://github.com/user-attachments/assets/11f74fad-fd72-43c4-9c6d-7f23c9672751" />
-<img width="1950" height="1060" alt="Seerr discovery" src="https://github.com/user-attachments/assets/27eef61b-3295-4949-a34f-58b6166e6e94" />
+<p align="center">
+  <img src="images/1-home.png" width="100%" alt="Home screen with the featured media bar" />
+</p>
+<p align="center">
+  <img src="images/2-playback.png" width="49%" alt="Player with trickplay thumbnails and the subtitle menu" />
+  <img src="images/5-livetv.png" width="49%" alt="Live TV guide, channel changer and player" />
+</p>
+<p align="center">
+  <img src="images/3-details.png" width="49%" alt="The five detail screen styles" />
+  <img src="images/4-mediabars.png" width="49%" alt="The six media bar styles" />
+</p>
+<p align="center">
+  <img src="images/8-home-rows.png" width="49%" alt="Modern and Classic home rows" />
+  <img src="images/6-navigation.png" width="49%" alt="Top and Sidebar navigation" />
+</p>
+<p align="center">
+  <img src="images/7-books-games.png" width="49%" alt="Books library and retro game library" />
+  <img src="images/9-music.png" width="49%" alt="Music player with synced lyrics" />
+</p>
 
 More in the [Screenshots](https://github.com/Moonfin-Client/Smart-TV/wiki/Screenshots) gallery.
 
