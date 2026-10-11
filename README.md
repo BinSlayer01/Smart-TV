@@ -64,8 +64,6 @@ The full list is on the [Features](https://github.com/Moonfin-Client/Smart-TV/wi
   <img src="images/9-music.png" width="49%" alt="Music player with synced lyrics" />
 </p>
 
-More in the [Screenshots](https://github.com/Moonfin-Client/Smart-TV/wiki/Screenshots) gallery.
-
 **Disclaimer:** Screenshots shown in this documentation feature media content, artwork, and actor likenesses for demonstration purposes only. None of the media, studios, actors, or other content depicted are affiliated with, sponsored by, or endorsing the Moonfin client or the Jellyfin project. All rights to the portrayed content belong to their respective copyright holders. These screenshots are used solely to demonstrate the functionality and interface of the application.
 
 ## Installation
