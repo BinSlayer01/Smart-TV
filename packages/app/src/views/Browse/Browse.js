@@ -9,6 +9,7 @@ import {useAuth} from '../../context/AuthContext';
 import {useSettings} from '../../context/SettingsContext';
 import {useSeerr} from '../../context/SeerrContext';
 import {ClassicMediaRow, ModernMediaRow} from '../../components/MediaRow';
+import {modernRowSpacing} from '../../components/MediaCard/modernCardLayout';
 import SeerrTileRow from '../../components/SeerrTileRow';
 import LibraryButtonRow from '../../components/LibraryButtonRow';
 import {SkeletonShimmer, skeletonTitleWidths} from '../../components/Skeleton';
@@ -143,7 +144,7 @@ const Browse = ({
 	// The other clients size these sliders in their own units, so the stored value
 	// lands here as the space below each row. Full screen rows pace themselves.
 	const rowSpacing = settings.fullScreenRows ? null : useModernRows
-		? Math.max(0, Math.min(Math.max((settings.modernHomeRowsPadding ?? 420) - 400, -40), 200) - 34)
+		? modernRowSpacing(settings)
 		: Math.max(0, settings.classicHomeRowsPadding ?? 30);
 
 	const {

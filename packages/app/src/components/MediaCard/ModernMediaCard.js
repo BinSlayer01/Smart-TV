@@ -1,4 +1,4 @@
-import {memo, useCallback, useMemo, useRef, useEffect} from 'react';
+import {memo, useCallback, useMemo, useRef, useEffect, useState} from 'react';
 import {isMdblistEnabled} from '../../services/mdblistApi';
 import Spottable from '@enact/spotlight/Spottable';
 import $L from '@enact/i18n/$L';
@@ -11,6 +11,7 @@ import {isStaticLibraryCard, modernCardMetrics, getEpisodeLabels, getCardDisplay
 import SeerrIcon from '../icons/SeerrIcon';
 import {showsWatchedCheck} from '../../utils/playedState';
 import {AnimeCardPill} from '../AnimeMarkerPills';
+import {isUnownedSeerrTitle, seerrThumbUrl, seerrWideArtUrl, useTmdbThumbsAvailable} from '../../utils/tmdbThumb';
 import useItemMenuHold from '../../hooks/useItemMenuHold';
 
 import css from './ModernMediaCard.module.less';
@@ -91,8 +92,18 @@ const ModernMediaCard = ({
 
 	const isStaticMyMedia = isStaticLibraryCard(isLibraryRow, settings);
 
+	// A focused Seerr or outside list title grows into the titled thumb the plugin picks
+	// for it, and a thumb that fails to load hands over to the plain backdrop.
+	const [failedThumb, setFailedThumb] = useState(null);
+	const wantsSeerrWide = isFocused && isUnownedSeerrTitle(item);
+	useTmdbThumbsAvailable(wantsSeerrWide);
+	const seerrThumb = wantsSeerrWide ? seerrThumbUrl(item) : null;
+	const seerrWide = wantsSeerrWide ? seerrWideArtUrl(item, failedThumb) : null;
+
 	const imageUrl = useMemo(() => {
 		if (!item) return null;
+
+		if (seerrWide) return toAbsoluteImageUrl(seerrWide, itemServerUrl);
 
 		const providerIds = item.ProviderIds || {};
 		const externalPoster = item._externalPosterUrl ||
@@ -102,7 +113,9 @@ const ModernMediaCard = ({
 			providerIds.LidarrPoster ||
 			providerIds.ReadarrPoster;
 
-		if (item._external || externalPoster) {
+		// A title the server owns shows the library's own art, with the outside poster as the
+		// last resort further down.
+		if ((item._external || externalPoster) && !item._resolvedFromExternal) {
 			if (isFocused && item._externalBackdropUrl) {
 				return toAbsoluteImageUrl(item._externalBackdropUrl, itemServerUrl);
 			}
@@ -221,7 +234,11 @@ const ModernMediaCard = ({
 		}
 
 		return null;
-	}, [item, itemServerUrl, isFocused, isStaticMyMedia, settings.useSeriesThumbnails]);
+	}, [item, itemServerUrl, isFocused, isStaticMyMedia, seerrWide, settings.useSeriesThumbnails]);
+
+	const handleImageError = useCallback(() => {
+		if (seerrThumb && imageUrl === seerrThumb) setFailedThumb(seerrThumb);
+	}, [imageUrl, seerrThumb]);
 
 	const handleClick = useCallback(() => {
 		onSelect?.(item);
@@ -313,6 +330,7 @@ const ModernMediaCard = ({
 							width={cardWidth}
 							height={imageHeight}
 							style={{height: `${imageHeight}px`}}
+							onError={handleImageError}
 						/>
 						{(item?.Type === 'Genre' || item?.Type === 'MusicGenre') && (
 							<>
