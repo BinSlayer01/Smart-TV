@@ -192,7 +192,7 @@ describe('localToProfile', () => {
 		const profile = localToProfile(defaultSettings);
 
 		expect(profile.classicHomeRowsPadding).toBe(30);
-		expect(profile.modernHomeRowsPadding).toBe(460);
+		expect(profile.modernHomeRowsPadding).toBe(420);
 	});
 
 	test('keeps the local only home row list out of the profile', () => {
