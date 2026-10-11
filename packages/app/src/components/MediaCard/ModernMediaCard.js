@@ -13,6 +13,7 @@ import {showsWatchedCheck} from '../../utils/playedState';
 import {AnimeCardPill} from '../AnimeMarkerPills';
 import {isUnownedSeerrTitle, seerrThumbUrl, seerrWideArtUrl, useTmdbThumbsAvailable} from '../../utils/tmdbThumb';
 import useItemMenuHold from '../../hooks/useItemMenuHold';
+import {useMediaPreviewSlot} from './MediaPreviewContext';
 
 import css from './ModernMediaCard.module.less';
 
@@ -240,12 +241,21 @@ const ModernMediaCard = ({
 		if (seerrThumb && imageUrl === seerrThumb) setFailedThumb(seerrThumb);
 	}, [imageUrl, seerrThumb]);
 
+	const {
+		phase: previewPhase,
+		frameRef: previewFrameRef,
+		onFocus: onPreviewFocus,
+		onBlur: onPreviewBlur,
+		stopForSelect: stopPreviewForSelect
+	} = useMediaPreviewSlot(spotlightId, item);
+
 	const handleClick = useCallback(() => {
+		stopPreviewForSelect();
 		onSelect?.(item);
-	}, [item, onSelect]);
+	}, [item, onSelect, stopPreviewForSelect]);
 
 	const itemAt = useCallback(() => item, [item]);
-	const menuHold = useItemMenuHold(itemAt, menuOptions);
+	const {onMouseLeave: onMenuMouseLeave, ...menuHold} = useItemMenuHold(itemAt, menuOptions);
 
 	const handleFocus = useCallback(() => {
 		onFocused?.(item?.Id || null);
@@ -255,7 +265,14 @@ const ModernMediaCard = ({
 		focusTimeoutRef.current = setTimeout(() => {
 			onFocusItem?.(item);
 		}, 50);
-	}, [item, onFocusItem, onFocused]);
+		onPreviewFocus();
+	}, [item, onFocusItem, onFocused, onPreviewFocus]);
+
+	// The menu hold watches the pointer leaving too, so both hear it.
+	const handleMouseLeave = useCallback((e) => {
+		onMenuMouseLeave?.(e);
+		onPreviewBlur();
+	}, [onMenuMouseLeave, onPreviewBlur]);
 
 	const progress = item?.UserData?.PlayedPercentage || 0;
 	const watchedBehavior = settings.watchedIndicatorBehavior || 'always';
@@ -309,6 +326,9 @@ const ModernMediaCard = ({
 			className={cardClassName}
 			onClick={handleClick}
 			onFocus={handleFocus}
+			onBlur={onPreviewBlur}
+			onMouseEnter={onPreviewFocus}
+			onMouseLeave={handleMouseLeave}
 			style={{
 				width: `${expanded ? expandedWidth : cardWidth}px`,
 				transition,
@@ -319,7 +339,7 @@ const ModernMediaCard = ({
 			onSpotlightLeft={onSpotlightLeft}
 			onSpotlightRight={onSpotlightRight}
 		>
-			<div className={css.imageContainer}>
+			<div className={previewPhase !== 'idle' ? `${css.imageContainer} ${css.previewHost}` : css.imageContainer}>
 				{imageUrl ? (
 					<>
 						<img
@@ -349,6 +369,13 @@ const ModernMediaCard = ({
 							<span className={css.placeholderTitle}>{item?.Name}</span>
 						)}
 					</div>
+				)}
+
+				{previewPhase !== 'idle' && (
+					<>
+						<div ref={previewFrameRef} className={previewPhase === 'playing' ? `${css.previewFrame} ${css.previewVisible}` : css.previewFrame} />
+						<div className={css.previewRing} />
+					</>
 				)}
 
 				{showIndicators && progress > 0 && (

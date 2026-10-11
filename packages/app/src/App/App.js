@@ -129,6 +129,9 @@ const PanelLoader = () => (
 	</div>
 );
 
+// Puts a class on the Browse panel's body so the stylesheet can turn its fade off on the Fire TV
+const browsePanelCss = {body: css.browseBody};
+
 const PANELS = {
 	LOGIN: 0,
 	BROWSE: 1,
@@ -1589,7 +1592,7 @@ const AppContent = (props) => {
 						<Panel>
 							<Login onLoggedIn={handleLoggedIn} backHandlerRef={backHandlerRef} />
 						</Panel>
-						<Panel>
+						<Panel css={browsePanelCss}>
 							<Browse
 								onSelectItem={handleSelectItem}
 								onSelectLibrary={handleSelectLibrary}
@@ -1606,6 +1609,7 @@ const AppContent = (props) => {
 								onFocusItemThemeMusic={themeMusic.playThemeMusicDelayed}
 								onBlurItemThemeMusic={themeMusic.cancelDelayed}
 								onLeaveThemeMusic={themeMusic.stopThemeMusic}
+								onHoldThemeMusic={themeMusic.holdThemeMusic}
 							/>
 						</Panel>
 						<Panel>

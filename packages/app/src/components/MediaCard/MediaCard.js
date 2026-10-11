@@ -8,6 +8,7 @@ import SeerrIcon from '../icons/SeerrIcon';
 import {AnimeCardPill} from '../AnimeMarkerPills';
 import useItemMenuHold from '../../hooks/useItemMenuHold';
 import {isUnownedSeerrTitle, seerrThumbUrl, seerrWideArtUrl, useTmdbThumbsAvailable} from '../../utils/tmdbThumb';
+import {useMediaPreviewSlot} from './MediaPreviewContext';
 
 import css from './MediaCard.module.less';
 
@@ -205,12 +206,21 @@ const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'post
 		if (seerrThumb && imageUrl === seerrThumb) setFailedThumb(seerrThumb);
 	}, [imageUrl, seerrThumb]);
 
+	const {
+		phase: previewPhase,
+		frameRef: previewFrameRef,
+		onFocus: onPreviewFocus,
+		onBlur: onPreviewBlur,
+		stopForSelect: stopPreviewForSelect
+	} = useMediaPreviewSlot(spotlightId, item);
+
 	const handleClick = useCallback(() => {
+		stopPreviewForSelect();
 		onSelect?.(item);
-	}, [item, onSelect]);
+	}, [item, onSelect, stopPreviewForSelect]);
 
 	const itemAt = useCallback(() => item, [item]);
-	const menuHold = useItemMenuHold(itemAt, menuOptions);
+	const {onMouseLeave: onMenuMouseLeave, ...menuHold} = useItemMenuHold(itemAt, menuOptions);
 
 	const handleFocus = useCallback(() => {
 		if (focusTimeoutRef.current) {
@@ -219,7 +229,14 @@ const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'post
 		focusTimeoutRef.current = setTimeout(() => {
 			onFocusItem?.(item);
 		}, 50);
-	}, [item, onFocusItem]);
+		onPreviewFocus();
+	}, [item, onFocusItem, onPreviewFocus]);
+
+	// The menu hold watches the pointer leaving too, so both hear it.
+	const handleMouseLeave = useCallback((e) => {
+		onMenuMouseLeave?.(e);
+		onPreviewBlur();
+	}, [onMenuMouseLeave, onPreviewBlur]);
 
 	const progress = item.UserData?.PlayedPercentage || 0;
 	const watchedBehavior = settings.watchedIndicatorBehavior || 'always';
@@ -254,7 +271,8 @@ const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'post
 		return null;
 	}, [item.Type, item.AlbumArtist, item.AlbumArtists, item.Artists]);
 
-	const cardClass = `${css.card} ${isBanner ? css.banner : isLandscape ? css.landscape : isSquare ? css.square : css.portrait}${isCircle ? ' ' + css.circle : ''}${settings.cardFocusZoom ? '' : ' ' + css.noZoom}`;
+	// The zoom comes off while the video shows so the card holds still under it.
+	const cardClass = `${css.card} ${isBanner ? css.banner : isLandscape ? css.landscape : isSquare ? css.square : css.portrait}${isCircle ? ' ' + css.circle : ''}${settings.cardFocusZoom ? '' : ' ' + css.noZoom}${previewPhase === 'playing' ? ' ' + css.previewing : ''}`;
 
 	const sizeMultiplier = POSTER_SIZE_MULTIPLIERS[settings.homeRowsPosterSize] || 1;
 	const shapeKey = isBanner ? 'banner' : isLandscape ? 'landscape' : isSquare ? 'square' : 'portrait';
@@ -271,8 +289,8 @@ const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'post
 		: imgSizeStyle;
 
 	return (
-		<SpottableDiv {...menuHold} className={cardClass} data-media-card onClick={handleClick} onFocus={handleFocus} style={sizeStyle} spotlightId={spotlightId} onSpotlightLeft={onSpotlightLeft} onSpotlightRight={onSpotlightRight}>
-			<div className={css.imageContainer}>
+		<SpottableDiv {...menuHold} className={cardClass} data-media-card onClick={handleClick} onFocus={handleFocus} onBlur={onPreviewBlur} onMouseEnter={onPreviewFocus} onMouseLeave={handleMouseLeave} style={sizeStyle} spotlightId={spotlightId} onSpotlightLeft={onSpotlightLeft} onSpotlightRight={onSpotlightRight}>
+			<div className={previewPhase !== 'idle' ? `${css.imageContainer} ${css.previewHost}` : css.imageContainer}>
 				{imageUrl ? (
 					<>
 						<img
@@ -301,6 +319,13 @@ const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'post
 					<div className={css.placeholder} style={imgSizeStyle}>
 						<div className={css.placeholderTitle}>{item.Name}</div>
 					</div>
+				)}
+
+				{previewPhase !== 'idle' && (
+					<>
+						<div ref={previewFrameRef} className={previewPhase === 'playing' ? `${css.previewFrame} ${css.previewVisible}` : css.previewFrame} />
+						<div className={css.previewRing} />
+					</>
 				)}
 
 				{showIndicators && progress > 0 && (
