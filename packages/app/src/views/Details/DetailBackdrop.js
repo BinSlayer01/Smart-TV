@@ -1,5 +1,6 @@
 import {useSettings} from '../../context/SettingsContext';
 import {scrimStyle} from '../../utils/scrimImage';
+import {serverBlurredUrl} from '../../utils/serverBlur';
 
 import css from './Details.module.less';
 
@@ -10,15 +11,16 @@ const NEON_SCRIM = [{to: 'bottom', rgb: '11, 4, 32', stops: [[0, 0.2], [0.4, 0.5
 // A person has no artwork worth blurring behind them, so they get the flat panel instead.
 const DetailBackdrop = ({backdropUrl, isPerson, blur}) => {
 	const {activeTheme} = useSettings();
+	const blurredUrl = serverBlurredUrl(backdropUrl, blur);
 	return (
 		<>
 			{backdropUrl && !isPerson && (
 				<div className={css.backdrop}>
 					<img
-						src={backdropUrl}
+						src={blurredUrl || backdropUrl}
 						className={css.backdropImage}
 						alt=""
-						style={blur > 0 ? {filter: `blur(${blur}px)`} : undefined}
+						style={!blurredUrl && blur > 0 ? {filter: `blur(${blur}px)`} : undefined}
 					/>
 				</div>
 			)}
