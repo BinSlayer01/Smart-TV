@@ -149,6 +149,7 @@ const PlayerControls = ({
 	topButtons,
 	bottomButtons,
 	displayTime,
+	seekStepSeconds,
 	duration,
 	progressPercent,
 	bufferedPercent,
@@ -410,7 +411,7 @@ const PlayerControls = ({
 									mediaSourceId={mediaSourceId}
 									positionTicks={displayTime * 10000000}
 									durationTicks={durationMs * 10000}
-									stepSeconds={settings.seekStep}
+									stepSeconds={seekStepSeconds}
 									mode={settings.trickPlayMode}
 									scalePercent={settings.trickPlayPreviewScale}
 									verticalPercent={settings.trickPlayVerticalPosition}
