@@ -127,6 +127,36 @@ export const SERVER_TO_TV_ROW = {
 	'imdb_top_english_movies': 'imdb-top-english'
 };
 
+const ROW_IMAGE_TYPES = ['poster', 'backdrop', 'logo', 'thumb', 'banner'];
+
+export const rowImageTypeFromServer = (value) => {
+	const type = typeof value === 'string' ? value.trim().toLowerCase() : '';
+	return ROW_IMAGE_TYPES.includes(type) ? type : undefined;
+};
+
+// The per row image types travel as row:type pairs under the server's row names, for
+// example "genres:thumb,nextup:poster", since the plugin saves its admin defaults as XML,
+// which can't hold a map. Continue Watching has its own key. An empty list is still sent,
+// because the server keeps the old list when the value is missing and a cleared row would
+// come back.
+export const homeRowImageTypesToServer = (overrides) => Object.entries(overrides || {})
+	.filter(([id]) => id !== 'resume')
+	.map(([id, type]) => `${TV_TO_SERVER_ROW[id] || id}:${type}`)
+	.join(',');
+
+export const homeRowImageTypesFromServer = (value) => {
+	if (typeof value !== 'string') return undefined;
+	const overrides = {};
+	for (const part of value.split(',')) {
+		const pair = part.split(':');
+		if (pair.length !== 2) continue;
+		const row = pair[0].trim().toLowerCase();
+		const type = rowImageTypeFromServer(pair[1]);
+		if (row && row !== 'resume' && type) overrides[SERVER_TO_TV_ROW[row] || row] = type;
+	}
+	return overrides;
+};
+
 // A row the saved layout lacks is appended switched off, except where `enabledById` says
 // otherwise. The seasonal row uses that: a client that predates it drops it from the layout it
 // pushes, so its own synced toggle decides.
