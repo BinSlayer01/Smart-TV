@@ -769,6 +769,9 @@ export const api = {
 	getLiveTvProgram: (programId) =>
 		request(`/LiveTv/Programs/${programId}?UserId=${currentUser}`),
 
+	getLiveTvAiringPrograms: (limit) =>
+		request(`/LiveTv/Programs/Recommended?UserId=${currentUser}&IsAiring=true&Limit=${limit}`),
+
 	// The recordings screen asks for one category per call, mirroring moonfin-core's
 	// categorized rails. Without options this stays the plain full listing.
 	getLiveTvRecordings: (options = {}) => {
