@@ -93,6 +93,27 @@ export const isExitKey = (e) => {
 	return (e.keyCode || e.which) === TIZEN_KEYS.EXIT;
 };
 
+// A held arrow repeats at the remote's own rate, which a slow TV can't always keep up with. A repeat that sat
+// waiting behind the last move is dropped, so focus keeps pace with the key and stops when it's let go.
+const STALE_REPEAT_MS = 100;
+export const dropStaleArrowRepeats = (target = window) => {
+	let held = null;
+	target.addEventListener('keydown', (e) => {
+		const code = e.keyCode;
+		if (code !== KEYS.UP && code !== KEYS.DOWN && code !== KEYS.LEFT && code !== KEYS.RIGHT) return;
+		const repeat = e.repeat || held === code;
+		held = code;
+		// Older engines stamp events with the wall clock rather than the page's own.
+		const now = e.timeStamp > 1e12 ? Date.now() : performance.now();
+		if (!repeat || now - e.timeStamp <= STALE_REPEAT_MS) return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+	}, true);
+	target.addEventListener('keyup', (e) => {
+		if (e.keyCode === held) held = null;
+	}, true);
+};
+
 export const ESSENTIAL_KEY_NAMES = [
 	'MediaPlay',
 	'MediaPause',
