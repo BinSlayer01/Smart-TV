@@ -539,16 +539,17 @@ export const getJellyfinDeviceProfile = async (options = {}) => {
 		: (caps.eac3 ? 'eac3,ac3,aac' : (caps.ac3 ? 'ac3,aac' : 'aac'));
 	const transcodingProfiles = [];
 
-	// hevc inside HLS TS only demuxes reliably from Tizen 6 up. Short segments
-	// and non keyframe breaks stall AVPlay on segment boundaries, so use longer
-	// keyframe aligned ones. VBR AAC in TS comes out LATM framed, which older
-	// firmware refuses, so keep the encoder on CBR
+	// Samsung recommends TS for HEVC over HLS on 2018 and 2019 sets, so HEVC is
+	// remuxed there too rather than encoded to H.264. Short segments and non
+	// keyframe breaks stall AVPlay on segment boundaries, so use longer keyframe
+	// aligned ones. VBR AAC in TS comes out LATM framed, which older firmware
+	// refuses, so keep the encoder on CBR
 	transcodingProfiles.push(
 		{
 			Container: 'ts',
 			Type: 'Video',
 			AudioCodec: tsAudio,
-			VideoCodec: caps.hevc && caps.tizenVersion >= 6 ? 'hevc,h264' : 'h264',
+			VideoCodec: caps.hevc ? 'hevc,h264' : 'h264',
 			Context: 'Streaming',
 			Protocol: 'hls',
 			MaxAudioChannels: maxAudioChannels,
