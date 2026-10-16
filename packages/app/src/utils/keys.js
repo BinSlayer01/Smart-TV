@@ -39,7 +39,8 @@ const TIZEN_KEYS = {
 	CHANNEL_DOWN: 428,
 };
 
-// The channel buttons reach the page as Page Up and Page Down.
+// The channel buttons reach the page as Page Up and Page Down, and the Magic Remote's pointer
+// hiding comes in as a key of its own.
 const WEBOS_KEYS = {
 	BACK: 461,
 	PLAY: 415,
@@ -49,6 +50,7 @@ const WEBOS_KEYS = {
 	FAST_FORWARD: 417,
 	CHANNEL_UP: 33,
 	CHANNEL_DOWN: 34,
+	POINTER_HIDE: 1537,
 };
 
 // The Vega WebView hands the page the back key as Escape and the transport keys

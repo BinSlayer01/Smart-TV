@@ -3053,6 +3053,9 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			const key = e.key || e.keyCode;
 			// The channel carousel takes every key while it's up.
 			if (carouselOpenRef.current) return;
+			// The pointer timing out isn't the viewer asking for the controls. It's left alone rather than
+			// consumed, since Spotlight needs it to leave pointer mode.
+			if (e.keyCode === KEYS.POINTER_HIDE) return;
 
 			if (handlePopupKeyDown(e)) return;
 
