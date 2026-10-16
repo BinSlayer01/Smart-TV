@@ -1485,7 +1485,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 									spotlightId={`library-group-row-${index}`}
 									title={group.name}
 									items={group.items}
-									serverUrl={serverUrl}
+									serverUrl={effectiveServerUrl}
 									cardType={playlistGrouped ? 'square' : 'portrait'}
 									rowIndex={index}
 									onSelectItem={onSelectItem}
@@ -1764,7 +1764,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 							<div className={css.settingValue}>{showLetterNav ? $L('On') : $L('Off')}</div>
 						</SpottableButton>
 
-						{!isFilterMode && (
+						{!isFilterMode && folderViewMode === 'local' && (
 							<SpottableButton
 								className={css.settingRow}
 								onClick={handleToggleFolderView}
