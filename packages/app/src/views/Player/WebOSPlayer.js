@@ -1037,8 +1037,10 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					};
 				} else if (autoAudio) {
 					setSelectedAudioIndex(autoAudio.index);
-					// Only switch via the audioTracks API when it isn't the file's native default
-					pendingAudioRef.current = !audioNegotiated && autoAudio.index !== defaultAudio?.index
+					// Direct play always sets the chosen track, since the TV can start on another one
+					// whatever the file flags as default.
+					pendingAudioRef.current = !audioNegotiated
+						&& (result.playMethod === playback.PlayMethod.DirectPlay || autoAudio.index !== defaultAudio?.index)
 						? {streamIndex: autoAudio.index, audioStreams: result.audioStreams || []}
 						: null;
 				}
@@ -1645,14 +1647,23 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					if (video.audioTracks?.length > 1) {
 						const matchIndex = matchAudioTrack(video.audioTracks, pending.audioStreams, pending.streamIndex);
 						if (matchIndex >= 0) {
-							for (let i = 0; i < video.audioTracks.length; i++) {
-								video.audioTracks[i].enabled = (i === matchIndex);
+							const playingIndex = Array.prototype.findIndex.call(video.audioTracks, (track) => track.enabled);
+							const switched = playingIndex !== matchIndex;
+							if (switched) {
+								for (let i = 0; i < video.audioTracks.length; i++) {
+									video.audioTracks[i].enabled = (i === matchIndex);
+								}
 							}
-							console.log('[Player] Applied initial audio track via audioTracks API, index:', pending.streamIndex, 'matchIndex:', matchIndex);
+							serverLogger.playback('Audio: initial track set', {
+								jellyfinIndex: pending.streamIndex,
+								matchIndex,
+								playingIndex,
+								switched
+							});
 						}
 						pendingAudioRef.current = null;
-					} else if (video.audioTracks?.length > 0) {
-						// Single audio track, nothing to switch
+					} else if (!video.audioTracks || video.audioTracks.length > 0) {
+						// No track list or a single track, nothing to switch
 						pendingAudioRef.current = null;
 					}
 				}
