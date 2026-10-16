@@ -2310,6 +2310,13 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		}
 	}, [isPaused, settings.unpauseRewind, isInGroup, showControls, noteViewerActivity, resumeHeldScrub, liveRecovery]);
 
+	// A pointer click on the picture plays or pauses and brings the controls up. Clicks on a control, an
+	// open picker or the still watching question bubble up here as well, so they only bring the controls up.
+	const handleSurfaceClick = useCallback((e) => {
+		showControls();
+		if (!activeModal && !askStillWatching && !e.target.closest?.('.spottable')) handlePlayPause();
+	}, [showControls, activeModal, askStillWatching, handlePlayPause]);
+
 	const handleRewind = useCallback(() => {
 		if (!videoRef.current) return;
 		noteViewerActivity();
@@ -3258,7 +3265,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	}, [focusRow, controlsVisible]);
 
 	return (
-		<div className={css.container} onClick={!isLoading && !error ? showControls : undefined}>
+		<div className={css.container} onClick={!isLoading && !error ? handleSurfaceClick : undefined}>
 			<div
 				ref={containerRef}
 				className={css.videoPlayer}
