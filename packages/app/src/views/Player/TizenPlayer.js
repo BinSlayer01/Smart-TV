@@ -45,6 +45,7 @@ import useAudioTransport from './audio/useAudioTransport';
 import useLyrics from './audio/useLyrics';
 import {handleAudioFocusKey, exitAudioPanel, nextAudioFocusRow, AUDIO_FOCUS_IDS} from './audio/audioFocus';
 import useSegmentPopups, {isSkipPromptFocused} from './useSegmentPopups';
+import useChannelKeys from './useChannelKeys';
 import {NextEpisodeContainer, CONTROLS_HIDE_DELAY, withTimeout, SEGMENT_FETCH_TIMEOUT} from './PlayerConstants';
 import NextUpOverlay from './NextUpOverlay';
 import SkipSegmentOverlay from './SkipSegmentOverlay';
@@ -1767,7 +1768,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		onPlayNext(episode, options);
 	}, [onPlayNext, stopTimeUpdatePolling, item.Id]);
 
-	const {carouselOpenRef, openCarousel, markChannelPlaying, carouselProps} = useChannelCarousel({
+	const {carouselOpenRef, openCarousel, stepChannel, markChannelPlaying, carouselProps} = useChannelCarousel({
 		item, isLiveTV, liveTvChannels, sortBy: settings.liveTvChannelSortBy,
 		error, controlsVisible, showControls, hideControls, setFocusRow,
 		onSwitchChannel: onPlayNextWithCleanup
@@ -2417,17 +2418,27 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		closeModal();
 	}, [closeModal]);
 
-	const handleSelectChapter = useCallback((e) => {
-		const ticks = parseInt(e.currentTarget.dataset.ticks, 10);
-		if (isNaN(ticks)) return;
+	const seekToChapter = useCallback((ticks) => {
 		dropScrub();
 		suppressSeekPrompts();
 		if (avplayReadyRef.current && ticks >= 0 && !groupSeekTo(ticks)) {
 			const seekMs = Math.floor(ticks / 10000);
 			seekAsViewer(seekMs).catch(err => console.warn('[Player] Chapter seek failed:', err));
 		}
+	}, [groupSeekTo, dropScrub, suppressSeekPrompts, seekAsViewer]);
+
+	const handleSelectChapter = useCallback((e) => {
+		const ticks = parseInt(e.currentTarget.dataset.ticks, 10);
+		if (isNaN(ticks)) return;
+		seekToChapter(ticks);
 		closeModal();
-	}, [closeModal, groupSeekTo, dropScrub, suppressSeekPrompts, seekAsViewer]);
+	}, [closeModal, seekToChapter]);
+
+	const handleChannelKey = useChannelKeys({
+		item, videoQueueRef, chapters, positionRef, isLiveTV, isAudioMode,
+		stepChannel, showControls, seekToChapter, noteViewerActivity,
+		onPlayItem: onPlayNextWithCleanup, onPlayNextNow: handlePlayNextNow, onNextTrack: handleNextTrack, onPrevTrack: handlePrevTrack
+	});
 
 	// Picks an episode from the browser. An episode part way through carries on from where it
 	// stopped and an unstarted one begins at the top, both of which the player already does for
@@ -2967,6 +2978,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				e.preventDefault();
 				e.stopPropagation();
 				handleBack();
+				return;
+			}
+			if (e.keyCode === KEYS.CHANNEL_UP || e.keyCode === KEYS.CHANNEL_DOWN) {
+				e.preventDefault();
+				e.stopPropagation();
+				if (!activeModal) handleChannelKey(e.keyCode === KEYS.CHANNEL_UP ? 1 : -1);
 				return;
 			}
 

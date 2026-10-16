@@ -39,6 +39,7 @@ const TIZEN_KEYS = {
 	CHANNEL_DOWN: 428,
 };
 
+// The channel buttons reach the page as Page Up and Page Down.
 const WEBOS_KEYS = {
 	BACK: 461,
 	PLAY: 415,
@@ -46,6 +47,8 @@ const WEBOS_KEYS = {
 	STOP: 413,
 	REWIND: 412,
 	FAST_FORWARD: 417,
+	CHANNEL_UP: 33,
+	CHANNEL_DOWN: 34,
 };
 
 // The Vega WebView hands the page the back key as Escape and the transport keys

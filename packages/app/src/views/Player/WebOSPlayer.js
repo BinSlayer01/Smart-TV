@@ -60,6 +60,7 @@ import LoadingAnimationLayer from '../../components/LoadingAnimation';
 import useSleepTimer from './useSleepTimer';
 import useSyncPlayCommands from './useSyncPlayCommands';
 import useSegmentPopups, {isSkipPromptFocused} from './useSegmentPopups';
+import useChannelKeys from './useChannelKeys';
 import {isPreroll, nextInQueue, shouldAutoAdvance} from '../../utils/cinemaMode';
 import {driftMs, needsSeek, seekLanded, correctionOptions, DRIFT_CHECK_MS, GROUP_SEEK_SETTLE_TIMEOUT_MS} from '../../utils/syncDrift';
 import {createReadyGate} from '../../utils/syncReady';
@@ -1768,7 +1769,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		onPlayNext(episode, options);
 	}, [onPlayNext, item.Id]);
 
-	const {carouselOpenRef, openCarousel, markChannelPlaying, carouselProps} = useChannelCarousel({
+	const {carouselOpenRef, openCarousel, stepChannel, markChannelPlaying, carouselProps} = useChannelCarousel({
 		item, isLiveTV, liveTvChannels, sortBy: settings.liveTvChannelSortBy,
 		error, controlsVisible, showControls, hideControls, setFocusRow,
 		onSwitchChannel: onPlayNextWithCleanup
@@ -2682,14 +2683,24 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		closeModal();
 	}, [closeModal]);
 
-	const handleSelectChapter = useCallback((e) => {
-		const ticks = parseInt(e.currentTarget.dataset.ticks, 10);
-		if (isNaN(ticks) || ticks < 0) return;
+	const seekToChapter = useCallback((ticks) => {
 		dropScrub();
 		suppressSeekPrompts();
 		if (!groupSeekTo(ticks)) seekToTicks(ticks);
+	}, [seekToTicks, groupSeekTo, dropScrub, suppressSeekPrompts]);
+
+	const handleSelectChapter = useCallback((e) => {
+		const ticks = parseInt(e.currentTarget.dataset.ticks, 10);
+		if (isNaN(ticks) || ticks < 0) return;
+		seekToChapter(ticks);
 		closeModal();
-	}, [closeModal, seekToTicks, groupSeekTo, dropScrub, suppressSeekPrompts]);
+	}, [closeModal, seekToChapter]);
+
+	const handleChannelKey = useChannelKeys({
+		item, videoQueueRef, chapters, positionRef, isLiveTV, isAudioMode,
+		stepChannel, showControls, seekToChapter, noteViewerActivity,
+		onPlayItem: onPlayNextWithCleanup, onPlayNextNow: handlePlayNextNow, onNextTrack: handleNextTrack, onPrevTrack: handlePrevTrack
+	});
 
 	// Picks an episode from the browser. An episode part way through carries on from where it
 	// stopped and an unstarted one begins at the top, both of which the player already does for
@@ -3086,6 +3097,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				e.preventDefault();
 				e.stopPropagation();
 				handleBack();
+				return;
+			}
+			if (e.keyCode === KEYS.CHANNEL_UP || e.keyCode === KEYS.CHANNEL_DOWN) {
+				e.preventDefault();
+				e.stopPropagation();
+				if (!activeModal) handleChannelKey(e.keyCode === KEYS.CHANNEL_UP ? 1 : -1);
 				return;
 			}
 
