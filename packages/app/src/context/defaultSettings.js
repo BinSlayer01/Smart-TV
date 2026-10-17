@@ -225,6 +225,7 @@ export const defaultSettings = {
 	cardFocusZoom: true,
 	useDetailedSubHeadings: true,
 	showMediaDetailsOnLibraryPage: true,
+	libraryStyle: 'classic',
 	hideBackdropsInLibraries: false,
 	useSeriesThumbnails: false,
 	// The server keys, as the other clients store them, so they sync as they are.
