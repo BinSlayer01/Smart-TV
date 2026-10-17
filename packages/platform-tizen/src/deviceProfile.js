@@ -534,8 +534,10 @@ export const getJellyfinDeviceProfile = async (options = {}) => {
 	// use TS because copying HEVC (especially Dolby Vision) into fMP4 HLS fails
 	// on several Tizen firmwares, so they must not match the fMP4 profile
 	const isOldTizen = caps.tizenVersion < 6;
+	// Sets before Tizen 6 play E-AC3 copied into a stream from the server with no
+	// sound, so the server converts it to AC3 for them
 	const tsAudio = isOldTizen
-		? (caps.eac3 ? 'eac3,ac3' : (caps.ac3 ? 'ac3' : 'mp3'))
+		? (caps.ac3 ? 'ac3' : 'mp3')
 		: (caps.eac3 ? 'eac3,ac3,aac' : (caps.ac3 ? 'ac3,aac' : 'aac'));
 	const transcodingProfiles = [];
 
