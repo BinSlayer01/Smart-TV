@@ -4,7 +4,7 @@
 
 import $L from '@enact/i18n/$L';
 
-import {isPluginSourcedRow, isRowEnabledBySetting} from '../../utils/homeRowGates';
+import {FAVORITE_ROW_IDS, isPluginSourcedRow, isRowEnabledBySetting} from '../../utils/homeRowGates';
 import {apiSortBy, getGenresIncludeTypes, resolveSortOrder} from '../../utils/homeRowSorting';
 
 export const COLLECTIONS_SECTION_SOURCE = 'collections';
@@ -16,6 +16,19 @@ export const PLUGIN_SECTION_RENDER_STEP = 60;
 export const isHomeRowVisibleByGates = (rowId, settings) => {
 	if (isPluginSourcedRow(rowId)) return Boolean(settings.useMoonfinPlugin) && isRowEnabledBySetting(rowId, settings);
 	return isRowEnabledBySetting(rowId, settings);
+};
+
+// The editor lists the disabled rows under one heading per kind, in this order
+export const HOME_ROW_GROUPS = ['general', 'collections', 'favorites', 'genres', 'playlists', 'seerr', 'external'];
+
+export const homeRowGroup = (row) => {
+	if (row.source === COLLECTIONS_SECTION_SOURCE || row.id === 'collections') return 'collections';
+	if (row.source === GENRES_SECTION_SOURCE || row.id === 'genres' || row.id === 'studios') return 'genres';
+	if (FAVORITE_ROW_IDS.includes(row.id)) return 'favorites';
+	if (row.id === 'playlists') return 'playlists';
+	if (row.id.startsWith('seerr_')) return 'seerr';
+	if (row.id.startsWith('tmdb_') || row.id.startsWith('imdb-')) return 'external';
+	return 'general';
 };
 
 export const mergeDiscoveredPluginSections = (existingSections, discoveredSections, source, toPluginSection) => {

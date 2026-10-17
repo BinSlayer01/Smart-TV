@@ -2,7 +2,7 @@
 // English source string, so handing the string straight back is faithful enough here.
 jest.mock('@enact/i18n/$L', () => ({__esModule: true, default: (str) => str}));
 
-import {buildCollectionPluginSections, isHomeRowVisibleByGates, mergeServerPluginSections, pluginSectionsFromServer} from './homeSectionsModel';
+import {buildCollectionPluginSections, homeRowGroup, isHomeRowVisibleByGates, mergeServerPluginSections, pluginSectionsFromServer} from './homeSectionsModel';
 
 const settings = (over = {}) => ({
 	displayFavoritesRows: true,
@@ -114,5 +114,21 @@ describe('mergeServerPluginSections', () => {
 	test('nothing new means the same list back', () => {
 		expect(mergeServerPluginSections(existing, [])).toBe(existing);
 		expect(mergeServerPluginSections(existing, undefined)).toBe(existing);
+	});
+});
+
+describe('homeRowGroup', () => {
+	test('puts each row under the kind the editor groups it by', () => {
+		expect(homeRowGroup({id: 'resume'})).toBe('general');
+		expect(homeRowGroup({id: 'radarr_calendar'})).toBe('general');
+		expect(homeRowGroup({id: 'collections'})).toBe('collections');
+		expect(homeRowGroup({id: 'collection:abc', source: 'collections'})).toBe('collections');
+		expect(homeRowGroup({id: 'favoriteMovies'})).toBe('favorites');
+		expect(homeRowGroup({id: 'studios'})).toBe('genres');
+		expect(homeRowGroup({id: 'genre:abc', source: 'genres'})).toBe('genres');
+		expect(homeRowGroup({id: 'playlists'})).toBe('playlists');
+		expect(homeRowGroup({id: 'seerr_trending'})).toBe('seerr');
+		expect(homeRowGroup({id: 'tmdb_popular_tv'})).toBe('external');
+		expect(homeRowGroup({id: 'imdb-top250-movies'})).toBe('external');
 	});
 });
