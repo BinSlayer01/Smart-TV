@@ -137,9 +137,13 @@ const whenScreensaverComponent = (ctx) => ctx.settings.screensaverEnabled && ctx
 const whenScreensaverStatic = (ctx) => whenScreensaverComponent(ctx) && ctx.settings.screensaverMovement === 'staticCorner';
 const whenLoadingAnimation = (ctx) => ctx.settings.loadingAnimationImage !== 'none';
 const whenTrickplay = (ctx) => isTrickplayOn(ctx.settings);
-// A Fire TV and an Xbox play through a browser video element with no passthrough of its own
+// A Fire TV plays through a browser video element and an Xbox has a passthrough switch
+// of its own, so neither uses these rows
 const inBrowserElement = (ctx) => ctx.isVega || ctx.isXbox;
 const whenPassthrough = (ctx) => ctx.settings.audioPassthroughMode === 'manual' && !inBrowserElement(ctx);
+// Only the Xbox console player can hand the console a file's sound as it is
+const whenXboxPassthrough = (ctx) => ctx.isXbox && ctx.settings.xboxNativePlayer !== false;
+const xboxPassesThrough = (ctx) => whenXboxPassthrough(ctx) && !!ctx.settings.xboxPassthrough;
 // The platforms where the app can be told to accept a certificate the device refuses
 const whenCertificateChoice = (ctx) => ctx.isWebOS || ctx.isVega || ctx.isXbox;
 // Samsung sets decode AC3 and E-AC3 themselves, so these two toggles only do anything on webOS
@@ -788,6 +792,8 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.TOGGLE, key: 'preferDefaultAudioTrack', label: () => $L('Prefer Default Audio Track'), desc: () => $L('Prefer original audio track over localized dub.'), icon: 'audiotrack'},
 					{kind: KIND.TOGGLE, key: 'preferAudioDescription', label: () => $L('Prefer Audio Description Tracks'), desc: () => $L('Prefer audio description tracks over normal tracks.'), icon: 'hearing'},
 					{kind: KIND.SECTION, id: 'audioOutput', label: () => $L('Audio Output')},
+					{kind: KIND.TEXT, id: 'xboxAudioOutput', text: () => $L("Unless Passthrough is on, Moonfin decodes all sound on the console and sends it on as PCM, so TrueHD, DTS-HD and Atmos do not reach a receiver as they are. What the receiver shows follows the console's own audio settings."), when: (ctx) => ctx.isXbox && !xboxPassesThrough(ctx)},
+					{kind: KIND.TOGGLE, key: 'xboxPassthrough', label: () => $L('Passthrough (Experimental)'), desc: () => $L("Send TrueHD, DTS and Dolby Digital tracks to your receiver as they are. Needs Allow passthrough on in the console's audio settings. Takes effect on the next playback"), icon: 'surround_sound', when: whenXboxPassthrough},
 					{kind: KIND.OPTION, key: 'audioPassthroughMode', label: () => $L('Passthrough'), desc: () => $L('How compressed surround sound reaches your TV or receiver.'), options: getPassthroughModeOptions, fallback: () => $L('Auto'), icon: 'surround_sound', when: (ctx) => !inBrowserElement(ctx)},
 					{kind: KIND.TOGGLE, key: 'downmixToStereo', label: () => $L('Downmix to Stereo'), desc: () => $L('Mix all decoded audio down to two channels.'), icon: 'speaker'},
 					{kind: KIND.TOGGLE, key: 'stereoUpmixEnabled', label: () => $L('Stereo to Surround Upmix'), desc: () => $L('Upmix stereo audio to 5.1 surround via server transcoding'), icon: 'equalizer', when: (ctx) => !ctx.settings.downmixToStereo},

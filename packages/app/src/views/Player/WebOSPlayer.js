@@ -27,7 +27,9 @@ import {
 	leavesPlayerInBackground,
 	resumesAfterFirstFrame,
 	showHostSubtitle,
-	notePlaybackError
+	notePlaybackError,
+	getHostAudioOutput,
+	chooseHostReader
 } from '../../services/video';
 import {KEYS, isBackKey} from '../../utils/keys';
 import {useSettings} from '../../context/SettingsContext';
@@ -1612,6 +1614,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				hls.loadSource(srcUrl);
 			} else {
 				destroyHlsPlayer();
+				chooseHostReader(video, playback.getCurrentSession());
 				video.src = srcUrl;
 				// Pass DV / codec hints so Starfish can activate the right decoder
 				if (mimeType) video.type = mimeType;
@@ -1829,6 +1832,11 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			}
 
 			setDuration(videoRef.current.duration);
+
+			// Whether the sound was decoded or passed on explains what the receiver shows
+			getHostAudioOutput().then((output) => {
+				if (output) serverLogger.playback('Playback: audio output', output);
+			});
 
 			const p = videoRef.current.play();
 			if (p && typeof p.catch === 'function') {
