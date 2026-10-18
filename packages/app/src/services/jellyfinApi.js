@@ -641,7 +641,7 @@ export const api = {
 	// Episodes and music videos get their own rows on a person, and the newest
 	// work is the part worth opening on.
 	getItemsByPerson: (personId, limit = 100) =>
-		request(`${userRoutes.items()}PersonIds=${personId}&Recursive=true&IncludeItemTypes=Movie,Series,MusicVideo,Episode&SortBy=PremiereDate&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,OfficialRating,BasicSyncInfo`),
+		request(`${userRoutes.items()}PersonIds=${personId}&Recursive=true&IncludeItemTypes=Movie,Series,MusicVideo,Episode&SortBy=PremiereDate&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,OfficialRating,BasicSyncInfo,People`),
 
 	getFavorites: (limit = 50) =>
 		request(`${userRoutes.items()}IsFavorite=true&Recursive=true&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,OfficialRating`),
@@ -1043,7 +1043,7 @@ export const createApiForServer = (serverUrl, token, userId, serverTypeOverride 
 		getPerson: (itemId) => serverRequest(serverUserRoutes.item(itemId)),
 
 		getItemsByPerson: (personId, limit = 100) =>
-			serverRequest(`${serverUserRoutes.items()}PersonIds=${personId}&Recursive=true&IncludeItemTypes=Movie,Series,MusicVideo,Episode&SortBy=PremiereDate&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,OfficialRating,BasicSyncInfo`),
+			serverRequest(`${serverUserRoutes.items()}PersonIds=${personId}&Recursive=true&IncludeItemTypes=Movie,Series,MusicVideo,Episode&SortBy=PremiereDate&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,OfficialRating,BasicSyncInfo,People`),
 
 		getItems: (params = {}) => {
 			// Manually build query string to match main api.getItems behavior
