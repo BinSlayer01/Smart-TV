@@ -2456,5 +2456,15 @@
     "Classic is the original header with a row of icons. Modern puts search, sort, group and filters in one labeled bar. Docked moves them into a panel down the left side.": "”Classic” on alkuperäinen otsikkopalkki, jossa on rivi kuvakkeita. ”Modern” sijoittaa haun, lajittelun, ryhmittelyn ja suodattimet yhteen nimikoituun palkkiin. ”Docked” siirtää ne vasemmalla puolella olevaan paneeliin.",
     "Docked": "Telakoituna",
     "Library Style": "Kirjastotyyli",
-    "Genres and Studios": "Genres & Studiot"
+    "Genres and Studios": "Genres & Studiot",
+    "Browse By Genre": "Selaa genren mukaan",
+    "Classic is the original rows under a Jump Back In card. Quick Access starts with a grid of your recent albums and playlists. Immersive leads with the album you're listening to.": "Classic-näkymässä näkyvät alkuperäiset rivit ”Jump Back In” -kortin alla. Quick Access -näkymä avautuu ruudukolla, jossa näkyvät viimeisimmät albumisi ja soittolistasi. Immersive-näkymä avautuu sillä albumilla, jota olet parhaillaan kuuntelemassa.",
+    "FROM THIS ALBUM": "TÄSTÄ ALBUMISTA",
+    "Immersive": "Immersiivinen",
+    "Jump Back In": "Palaa takaisin",
+    "Music Library Style": "Musiikkikirjaston tyyli",
+    "Overview": "Yleiskatsaus",
+    "Quick Access": "Pikavalikko",
+    "Search Music": "Etsi musiikkia",
+    "Video Library Style": "Videokirjaston tyyli"
 }
