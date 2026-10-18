@@ -26,7 +26,7 @@ export const homeRowGroup = (row) => {
 	if (row.source === GENRES_SECTION_SOURCE || row.id === 'genres' || row.id === 'studios') return 'genres';
 	if (FAVORITE_ROW_IDS.includes(row.id)) return 'favorites';
 	if (row.id === 'playlists') return 'playlists';
-	if (row.id.startsWith('seerr_')) return 'seerr';
+	if (row.id.startsWith('seerr_') || row.id === 'radarr_calendar' || row.id === 'sonarr_calendar') return 'seerr';
 	if (row.id.startsWith('tmdb_') || row.id.startsWith('imdb-')) return 'external';
 	return 'general';
 };

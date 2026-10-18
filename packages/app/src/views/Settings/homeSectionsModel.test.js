@@ -120,7 +120,6 @@ describe('mergeServerPluginSections', () => {
 describe('homeRowGroup', () => {
 	test('puts each row under the kind the editor groups it by', () => {
 		expect(homeRowGroup({id: 'resume'})).toBe('general');
-		expect(homeRowGroup({id: 'radarr_calendar'})).toBe('general');
 		expect(homeRowGroup({id: 'collections'})).toBe('collections');
 		expect(homeRowGroup({id: 'collection:abc', source: 'collections'})).toBe('collections');
 		expect(homeRowGroup({id: 'favoriteMovies'})).toBe('favorites');
@@ -128,6 +127,8 @@ describe('homeRowGroup', () => {
 		expect(homeRowGroup({id: 'genre:abc', source: 'genres'})).toBe('genres');
 		expect(homeRowGroup({id: 'playlists'})).toBe('playlists');
 		expect(homeRowGroup({id: 'seerr_trending'})).toBe('seerr');
+		expect(homeRowGroup({id: 'seerr_shortcuts'})).toBe('seerr');
+		expect(homeRowGroup({id: 'radarr_calendar'})).toBe('seerr');
 		expect(homeRowGroup({id: 'tmdb_popular_tv'})).toBe('external');
 		expect(homeRowGroup({id: 'imdb-top250-movies'})).toBe('external');
 	});
