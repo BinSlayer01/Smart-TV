@@ -182,6 +182,7 @@ const VALUE_CONVERSIONS = {
 	},
 	seasonalDensity: oneOf(SEASONAL_DENSITIES),
 	libraryStyle: oneOf(['classic', 'modern', 'docked']),
+	musicLibraryStyle: oneOf(['classic', 'quickAccess', 'immersive']),
 	seasonalRowCountry: {fromServer: normalizeSeasonalRowCountry},
 	seasonalRowHiddenHolidays: {fromServer: normalizeSeasonalHiddenHolidays},
 	screensaverContentType: {
@@ -284,7 +285,7 @@ export const SYNCABLE_KEYS = [
 	'episodePreviewEnabled', 'previewAudioEnabled',
 	'hideDetailsMediaDescription', 'detailUseSeriesThumbnails', 'hideHomeMediaDescription',
 	'personalRatingStyle', 'recentlyReleasedSeriesType', 'mergeRecentRowsByType', 'playlistsGroupByType', 'groupItemsIntoCollections',
-	'useDetailedSubHeadings', 'showMediaDetailsOnLibraryPage', 'hideBackdropsInLibraries', 'libraryStyle',
+	'useDetailedSubHeadings', 'showMediaDetailsOnLibraryPage', 'hideBackdropsInLibraries', 'libraryStyle', 'musicLibraryStyle',
 	'syncplayEnabled', 'syncplayAutoOpen',
 	'showSyncPlayButton',
 	'syncPlayAdvancedCorrectionEnabled', 'syncPlayEnableSyncCorrection',

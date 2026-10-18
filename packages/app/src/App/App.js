@@ -1630,6 +1630,8 @@ const AppContent = (props) => {
 								onSelectItem={handleSelectItem}
 								onViewPhoto={handleViewPhoto}
 								onHome={handleHome}
+								onPlay={handlePlay}
+								onSearch={handleOpenSearch}
 									backHandlerRef={backHandlerRef}
 							/>
 							)}
