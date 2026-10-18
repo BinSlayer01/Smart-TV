@@ -48,12 +48,14 @@ const GroupRow = ({group, count, open, onToggle}) => (
 
 // The Enabled list is what Home shows, in its order: the built-in rows, then the plugin
 // sections, each moving among its own with left and right. The disabled rows sit below in a
-// group per kind that OK opens and closes. Rows the viewer has switched off elsewhere are left
-// out, and the arrangement is written back when the screen closes.
+// group per kind that OK opens and closes. Rows the viewer has switched off elsewhere, and the
+// Live TV rows on a server without Live TV, are left out. The arrangement is written back when
+// the screen closes.
 const HomeRowsView = ({
 	settings,
 	tempHomeRows,
 	tempPluginSections,
+	serverHasLiveTv,
 	pluginSectionRenderLimit,
 	onShowMoreSections,
 	onToggleHomeRow,
@@ -65,7 +67,7 @@ const HomeRowsView = ({
 }) => {
 	useCommitOnLeave(onLeave);
 	const [openGroups, setOpenGroups] = useState(() => new Set(['general']));
-	const visibleRows = tempHomeRows.filter((row) => isHomeRowVisibleByGates(row.id, settings));
+	const visibleRows = tempHomeRows.filter((row) => isHomeRowVisibleByGates(row.id, settings, serverHasLiveTv));
 	const enabledRows = visibleRows.filter((row) => row.enabled);
 	const enabledSections = tempPluginSections.filter((section) => section.enabled);
 	const enabledIds = [...enabledRows, ...enabledSections].map(rowSpotlightId);

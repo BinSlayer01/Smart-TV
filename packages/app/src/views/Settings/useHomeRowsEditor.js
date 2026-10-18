@@ -43,6 +43,9 @@ const useHomeRowsEditor = ({api, settings, updateSetting, updateSettings, pushVi
 	const [tempHomeRows, setTempHomeRows] = useState([]);
 	const [tempPluginSections, setTempPluginSections] = useState([]);
 	const [pluginSectionRenderLimit, setPluginSectionRenderLimit] = useState(INITIAL_PLUGIN_SECTION_RENDER_COUNT);
+	// Turns false once the server answers with no Live TV channels, which hides the Live TV rows.
+	// A failed check keeps the last answer.
+	const [serverHasLiveTv, setServerHasLiveTv] = useState(true);
 	const openedRef = useRef({rows: '', sections: ''});
 
 	const refreshBuiltInCollectionGenreSections = useCallback(async () => {
@@ -94,6 +97,10 @@ const useHomeRowsEditor = ({api, settings, updateSetting, updateSettings, pushVi
 		setPluginSectionRenderLimit(INITIAL_PLUGIN_SECTION_RENDER_COUNT);
 		pushView({ view: 'homeRows', returnFocusTo: 'setting-homeRows' });
 
+		api.getLiveTvChannels(0, 1)
+			.then((result) => setServerHasLiveTv((result?.Items || []).length > 0))
+			.catch(() => {});
+
 		refreshBuiltInCollectionGenreSections()
 			.then((builtInSections) => {
 				setTempPluginSections((prev) => {
@@ -120,7 +127,7 @@ const useHomeRowsEditor = ({api, settings, updateSetting, updateSettings, pushVi
 				});
 			})
 			.catch(() => {});
-	}, [settings.homeRows, settings.pluginSections, pushView, refreshBuiltInCollectionGenreSections]);
+	}, [api, settings.homeRows, settings.pluginSections, pushView, refreshBuiltInCollectionGenreSections]);
 
 	const commitHomeRows = useCallback(() => {
 		const rowsChanged = editedListKey(tempHomeRows) !== openedRef.current.rows;
@@ -157,7 +164,7 @@ const useHomeRowsEditor = ({api, settings, updateSetting, updateSettings, pushVi
 	// are hiding, so the row passes the next one the viewer sees in the Enabled list.
 	const moveHomeRow = useCallback((rowId, direction) => {
 		setTempHomeRows((prev) => {
-			const visibleRows = prev.filter((row) => row.enabled && isHomeRowVisibleByGates(row.id, settings));
+			const visibleRows = prev.filter((row) => row.enabled && isHomeRowVisibleByGates(row.id, settings, serverHasLiveTv));
 			const visibleIndex = visibleRows.findIndex((row) => row.id === rowId);
 			const neighbourIndex = visibleIndex + direction;
 			if (visibleIndex < 0 || neighbourIndex < 0 || neighbourIndex >= visibleRows.length) return prev;
@@ -167,7 +174,7 @@ const useHomeRowsEditor = ({api, settings, updateSetting, updateSettings, pushVi
 			if (index < 0 || targetIndex < 0) return prev;
 			return swapOrder(prev, index, targetIndex);
 		});
-	}, [settings]);
+	}, [settings, serverHasLiveTv]);
 
 	// A section touched before the discovered ones came back still counts against the list it had
 	const noteSectionsOpened = (prev) => {
@@ -201,6 +208,7 @@ const useHomeRowsEditor = ({api, settings, updateSetting, updateSettings, pushVi
 		tempPluginSections,
 		pluginSectionRenderLimit,
 		setPluginSectionRenderLimit,
+		serverHasLiveTv,
 		toggleHomeRowEnabled,
 		toggleSeerrHomeRow,
 		openHomeRows,

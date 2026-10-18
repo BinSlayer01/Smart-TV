@@ -117,6 +117,14 @@ describe('mergeServerPluginSections', () => {
 	});
 });
 
+test('the Live TV rows are left out when the server has no Live TV', () => {
+	expect(isHomeRowVisibleByGates('livetv', settings(), false)).toBe(false);
+	expect(isHomeRowVisibleByGates('onnow', settings(), false)).toBe(false);
+	expect(isHomeRowVisibleByGates('activerecordings', settings(), false)).toBe(false);
+	expect(isHomeRowVisibleByGates('resume', settings(), false)).toBe(true);
+	expect(isHomeRowVisibleByGates('livetv', settings())).toBe(true);
+});
+
 describe('homeRowGroup', () => {
 	test('puts each row under the kind the editor groups it by', () => {
 		expect(homeRowGroup({id: 'resume'})).toBe('general');

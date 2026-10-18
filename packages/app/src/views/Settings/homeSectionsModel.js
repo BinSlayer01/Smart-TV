@@ -13,7 +13,10 @@ export const GENRES_SECTION_SOURCE = 'genres';
 export const INITIAL_PLUGIN_SECTION_RENDER_COUNT = 60;
 export const PLUGIN_SECTION_RENDER_STEP = 60;
 
-export const isHomeRowVisibleByGates = (rowId, settings) => {
+const LIVE_TV_ROW_IDS = ['livetv', 'onnow', 'activerecordings'];
+
+export const isHomeRowVisibleByGates = (rowId, settings, serverHasLiveTv = true) => {
+	if (!serverHasLiveTv && LIVE_TV_ROW_IDS.includes(rowId)) return false;
 	if (isPluginSourcedRow(rowId)) return Boolean(settings.useMoonfinPlugin) && isRowEnabledBySetting(rowId, settings);
 	return isRowEnabledBySetting(rowId, settings);
 };
