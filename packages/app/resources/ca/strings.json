@@ -2466,5 +2466,13 @@
     "Overview": "Visió general",
     "Quick Access": "Accés ràpid",
     "Search Music": "Cerca música",
-    "Video Library Style": "Estil de la biblioteca de vídeos"
+    "Video Library Style": "Estil de la biblioteca de vídeos",
+    "Or scan this with a phone that's signed in to your server": "O escaneja això amb un telèfon que tingui la sessió iniciada al teu servidor",
+    "Switch User": "Canvia d'usuari",
+    "This account isn't available right now.": "Aquest compte no està disponible ara mateix.",
+    "Time's up": "S'ha acabat el temps",
+    "You can use it again on {day} at {time}.": "El podràs tornar a fer servir el {day} a les {time}.",
+    "You can use it again today at {time}.": "El podràs tornar a fer servir avui a les {time}.",
+    "You can use it again tomorrow at {time}.": "El podràs tornar a fer servir demà a les {time}.",
+    "This account can't sign in right now. It may be outside its allowed hours, locked or disabled. Try again later or ask an administrator.": "Aquest compte no pot iniciar sessió ara mateix. Pot ser que sigui fora del seu horari permès, o que estigui bloquejat o desactivat. Torna-ho a provar més tard o demana-ho a un administrador."
 }
