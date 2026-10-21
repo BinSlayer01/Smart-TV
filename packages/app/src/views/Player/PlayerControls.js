@@ -87,8 +87,11 @@ export const usePlayerButtons = ({
 			return [
 				{id: 'favorite', icon: isFavorite ? <IconFavoriteFilled /> : <IconFavorite />, label: $L('Favorite'), action: 'favorite', active: isFavorite, side: 'start'},
 				{id: 'addToPlaylist', icon: <IconPlaylistAdd />, label: $L('Add to Playlist'), action: 'addToPlaylist', side: 'start'},
-				...(hasLyrics ? [{id: 'lyrics', icon: <IconLyrics />, label: $L('Lyrics'), action: 'lyrics', active: audioPanel === 'lyrics', selected: audioPanel === 'lyrics'}] : []),
-				{id: 'queue', icon: <IconQueueMusic />, label: $L('Up Next'), action: 'queue', active: audioPanel === 'queue', selected: audioPanel === 'queue'}
+				// Without lyrics Up Next is the only panel, so there's nothing to toggle.
+				...(hasLyrics ? [
+					{id: 'lyrics', icon: <IconLyrics />, label: $L('Lyrics'), action: 'lyrics', active: audioPanel === 'lyrics', selected: audioPanel === 'lyrics'},
+					{id: 'queue', icon: <IconQueueMusic />, label: $L('Up Next'), action: 'queue', active: audioPanel === 'queue', selected: audioPanel === 'queue'}
+				] : [])
 			];
 		}
 		// Declaration order is where a button the user never placed ends up, so keep it stable.

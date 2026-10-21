@@ -90,6 +90,9 @@ export const isBackKey = (e) => {
 	return code === KEYS.BACK || code === 27 || code === 8;
 };
 
+// The transport keys, which music playing behind the other screens still answers.
+export const isMediaKey = (e) => [KEYS.PLAY, KEYS.PAUSE, KEYS.PLAY_PAUSE, KEYS.STOP, KEYS.FAST_FORWARD, KEYS.REWIND].includes(e.keyCode || e.which);
+
 // A remote with a menu key does with one press what the others do by holding OK.
 export const isMenuKey = (e) => KEYS.MENU !== undefined && (e.keyCode || e.which) === KEYS.MENU;
 

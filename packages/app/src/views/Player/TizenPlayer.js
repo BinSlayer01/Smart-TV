@@ -14,7 +14,7 @@ import {
 import {useSettings} from '../../context/SettingsContext';
 import {useSyncPlay} from '../../context/SyncPlayContext';
 import * as syncPlayService from '../../services/syncPlay';
-import {KEYS, isBackKey} from '../../utils/keys';
+import {KEYS, isBackKey, isMediaKey} from '../../utils/keys';
 import {isPreroll, nextInQueue, shouldAutoAdvance} from '../../utils/cinemaMode';
 import {driftMs, needsSeek, correctionOptions, DRIFT_CHECK_MS, GROUP_SEEK_SETTLE_TIMEOUT_MS} from '../../utils/syncDrift';
 import {createReadyGate} from '../../utils/syncReady';
@@ -44,7 +44,8 @@ import useSyncPlayCommands from './useSyncPlayCommands';
 import AudioMode from './audio/AudioMode';
 import useAudioTransport from './audio/useAudioTransport';
 import useLyrics from './audio/useLyrics';
-import {handleAudioFocusKey, exitAudioPanel, nextAudioFocusRow, AUDIO_FOCUS_IDS} from './audio/audioFocus';
+import useSkipFailedTrack from './audio/useSkipFailedTrack';
+import {handleAudioFocusKey, exitAudioPanel, nextAudioFocusRow, focusAudioRow, forgetDockFocus} from './audio/audioFocus';
 import useSegmentPopups, {isSkipPromptFocused} from './useSegmentPopups';
 import useChannelKeys from './useChannelKeys';
 import {NextEpisodeContainer, CONTROLS_HIDE_DELAY, withTimeout, SEGMENT_FETCH_TIMEOUT} from './PlayerConstants';
@@ -114,7 +115,7 @@ const renderInfoPlaybackRows = ({css: c}) => (
  * playback. AVPlay renders on a platform multimedia layer BEHIND the web engine;
  * the web layer must be transparent in the video area for the content to show through.
  */
-const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialSubtitleIndex, initialStartPositionTicks, initialQuality, forceTranscode, onEnded, onBack, onGuide, onPlayNext, onSelectPerson, audioPlaylist, videoQueue, liveTvChannels, onPausedChange}) => {
+const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialSubtitleIndex, initialStartPositionTicks, initialQuality, forceTranscode, onEnded, onBack, onGuide, onPlayNext, onSelectPerson, audioPlaylist, videoQueue, liveTvChannels, onPausedChange, background, onBackground}) => {
 	const {settings, updateSetting} = useSettings();
 	const {isInGroup, lastCommand} = useSyncPlay();
 	const syncPlayCommandRef = useRef(false);
@@ -303,7 +304,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	const {
 		shuffleMode, repeatMode, hasNextTrack, hasPrevTrack,
 		handleToggleShuffle, handleToggleRepeat, setShuffleMode, setRepeatMode, handleNextTrack, handlePrevTrack,
-		handleSelectQueueTrack, handleSeekToLyric, audioPanel, handleSelectAudioPanel, getNextStep
+		handleSelectQueueTrack, handleSeekToLyric, audioPanel, handleSelectAudioPanel, queueTracks, getNextStep
 	} = useAudioTransport({
 		item, audioPlaylist, isAudioMode, onPlayNext, positionRef,
 		restartCurrent, seekTo, getPositionSeconds, setFocusRow,
@@ -906,26 +907,29 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			// Make ALL ancestor backgrounds transparent so AVPlay video layer shows through.
 			// Enact's ThemeDecorator, Panels, and Panel components all inject opaque
 			// backgrounds that would otherwise block the native AVPlay layer behind the web engine.
-			document.body.style.background = 'transparent';
-			document.documentElement.style.background = 'transparent';
-			if (playerContainerRef.current) {
-				let el = playerContainerRef.current.parentElement;
-				while (el && el !== document.documentElement) {
-					el.style.background = 'transparent';
-					el.style.backgroundColor = 'transparent';
-					el = el.parentElement;
-				}
-			} else {
-				// Fallback: target known roots
-				const appRoot = document.getElementById('root') || document.getElementById('app');
-				if (appRoot) {
-					appRoot.style.background = 'transparent';
-					// Also walk its children upward from appRoot
-					let child = appRoot.firstElementChild;
-					while (child) {
-						child.style.background = 'transparent';
-						child.style.backgroundColor = 'transparent';
-						child = child.firstElementChild;
+			// Music playing behind the other screens has no picture to show, so they keep their own.
+			if (!background) {
+				document.body.style.background = 'transparent';
+				document.documentElement.style.background = 'transparent';
+				if (playerContainerRef.current) {
+					let el = playerContainerRef.current.parentElement;
+					while (el && el !== document.documentElement) {
+						el.style.background = 'transparent';
+						el.style.backgroundColor = 'transparent';
+						el = el.parentElement;
+					}
+				} else {
+					// Fallback: target known roots
+					const appRoot = document.getElementById('root') || document.getElementById('app');
+					if (appRoot) {
+						appRoot.style.background = 'transparent';
+						// Also walk its children upward from appRoot
+						let child = appRoot.firstElementChild;
+						while (child) {
+							child.style.background = 'transparent';
+							child.style.backgroundColor = 'transparent';
+							child = child.firstElementChild;
+						}
 					}
 				}
 			}
@@ -1010,7 +1014,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				unregisterAppStateRef.current();
 			}
 		};
-	}, [isPaused]);
+	}, [isPaused, background]);
 
 	useEffect(() => {
 		onPausedChange?.(isPaused);
@@ -1236,6 +1240,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			const generation = ++loadGenerationRef.current;
 			const stillCurrent = () => generation === loadGenerationRef.current;
 			setIsLoading(true);
+			// A video taking over from music opens on its own screen, not the music player's.
+			setIsAudioMode((wasAudio) => wasAudio && (item?.MediaType === 'Audio' || item?.Type === 'Audio'));
 			setError(null);
 			setSubtitleTrackEvents(null);
 			setCurrentSubtitleText(null);
@@ -1518,7 +1524,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				setLogoUrl(isLiveTV ? null : getLogoUrl(item?._serverUrl || getServerUrl(), item, {maxWidth: 800, quality: 90}));
 				const shouldUseAudioMode = !!result.isAudio || item?.MediaType === 'Audio' || item?.Type === 'Audio';
 				setIsAudioMode(shouldUseAudioMode);
-				setFocusRow('bottom');
+				// The next track keeps the music player's focus wherever the remote left it.
+				setFocusRow((row) => (shouldUseAudioMode && (row === 'panel' || row === 'progress') ? row : 'bottom'));
 				setIsFavorite(!!item.UserData?.IsFavorite);
 
 				// Audio mode: always show controls, skip video-only features.
@@ -1696,8 +1703,9 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 
 	// Guard against random WebKit/Tizen page zoom side-effects while in player.
 	// We lock the root font-size to the value at player entry and restore on exit.
+	// Music playing behind the other screens leaves it alone, so a Settings interface scale still lands.
 	useEffect(() => {
-		if (typeof window === 'undefined' || typeof document === 'undefined') return () => {};
+		if (typeof window === 'undefined' || typeof document === 'undefined' || background) return () => {};
 
 		const html = document.documentElement;
 		if (!html) return () => {};
@@ -1724,7 +1732,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			}
 			rootFontSizePxRef.current = null;
 		};
-	}, [enforceRootFontSize]);
+	}, [enforceRootFontSize, background]);
 
 	// ==============================
 	// Controls Auto-hide
@@ -1980,6 +1988,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		await teardownPlayback();
 		onBack?.();
 	}, [teardownPlayback, onBack]);
+
+	useSkipFailedTrack({error, background, item, hasNextTrack, handleNextTrack, handleBack});
 
 	const handleOpenGuide = useCallback(async () => {
 		await teardownPlayback();
@@ -2523,14 +2533,13 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			executeDeferredSeek();
 			const next = isAudioMode ? nextAudioFocusRow('progress', 'up') : 'bottom';
 			setFocusRow(next);
-			window.requestAnimationFrame(() => Spotlight.focus(isAudioMode ? AUDIO_FOCUS_IDS[next] : 'play-pause-btn'));
+			if (isAudioMode) focusAudioRow(next);
+			else window.requestAnimationFrame(() => Spotlight.focus('play-pause-btn'));
 		} else if (e.key === 'ArrowDown' || e.keyCode === 40) {
 			e.preventDefault();
 			executeDeferredSeek();
 			setFocusRow('bottom');
-			if (isAudioMode) {
-				window.requestAnimationFrame(() => Spotlight.focus('play-pause-btn'));
-			}
+			if (isAudioMode) focusAudioRow('bottom');
 		}
 	}, [heldSeekStep, showControls, scrubBy, executeDeferredSeek, resumeHeldScrub, handlePlayPause, isAudioMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2940,6 +2949,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	// ==============================
 	useEffect(() => {
 		const handleKeyDown = (e) => {
+			// Music playing behind the other screens leaves the remote to them, all but its media keys.
+			if (background && !isMediaKey(e)) return;
 			const key = e.key || e.keyCode;
 			// The channel carousel takes every key while it's up.
 			if (carouselOpenRef.current) return;
@@ -3017,6 +3028,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				// Back leaves the queue or lyrics panel before it leaves the player
 				if (isAudioMode && focusRow === 'panel') {
 					exitAudioPanel(setFocusRow);
+					return;
+				}
+				// Back keeps the music going on the screen underneath, with the mini player up.
+				if (isAudioMode && onBackground) {
+					forgetDockFocus();
+					onBackground();
 					return;
 				}
 				if (controlsVisible) {
@@ -3114,20 +3131,26 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	const bufferedPercent = null;
 
 	// Focus appropriate element when focusRow changes. The loading screen
-	// unmounts the controls, so the next track's load has to put focus back too.
+	// unmounts the controls, so the next load has to put focus back too.
 	useEffect(() => {
-		if (!controlsVisible || isLoading) return;
+		if (!controlsVisible || background || (isLoading && !isAudioMode)) return;
 
 		window.requestAnimationFrame(() => {
 			// The skip prompt keeps the remote when the controls come up around it.
 			if (isSkipPromptFocused()) return;
+			// The music player moves its own focus and stays up between tracks, so this
+			// only picks up focus that went missing, like a lyrics toggle a track took away.
+			if (isAudioMode) {
+				if (document.activeElement === document.body) focusAudioRow(focusRow);
+				return;
+			}
 			if (focusRow === 'progress') {
 				Spotlight.focus('progress-bar');
 			} else if (focusRow === 'bottom') {
 				Spotlight.focus('play-pause-btn');
 			}
 		});
-	}, [focusRow, controlsVisible, isLoading]);
+	}, [focusRow, controlsVisible, isLoading, background, isAudioMode, lyrics.lines.length]);
 
 	// ==============================
 	// Render
@@ -3142,8 +3165,11 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		/>
 	);
 
-	// Render loading
-	if (isLoading) {
+	// AVPlay plays on its own layer, so music in the background needs nothing on screen.
+	if (background) return null;
+
+	// Render loading. The music player stays up while the next track loads, so focus and the queue stay put.
+	if (isLoading && !isAudioMode) {
 		return (
 			<div className={css.container}>
 				{channelCarousel}
@@ -3186,7 +3212,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					serverUrl={getServerUrl()}
 					focusRow={focusRow}
 					panel={audioPanel}
-					audioPlaylist={audioPlaylist}
+					audioPlaylist={queueTracks}
 					onSelectTrack={handleSelectQueueTrack}
 					lyrics={lyrics}
 					onSeekToLine={handleSeekToLyric}

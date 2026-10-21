@@ -1,7 +1,7 @@
 import {useState, useEffect, useCallback, useRef} from 'react';
 import {buildQueryString} from '../../utils/urlCompat';
 import {stopPlaybackForTrailer} from '../../utils/trailerPlayback';
-import {claimSharedVideo, ownsSharedVideo, releaseSharedVideo} from '../../utils/sharedVideoOwner';
+import {claimSharedVideo, isMusicPlaying, ownsSharedVideo, releaseSharedVideo} from '../../utils/sharedVideoOwner';
 import {coverVideoInBox} from '../../utils/videoCover';
 import {createApiForServer, getApiKey, getServerUrl as getDefaultServerUrl} from '../../services/jellyfinApi';
 import serverLogger from '../../services/serverLogger';
@@ -404,7 +404,7 @@ export default function useTrailerPreview({currentItem, isVisible, enabled, pref
 	}, [stopTrailer, stopWatch, preferMuted, showCaptions, captionLanguage, removeCaptionTrack, releaseStream]);
 
 	useEffect(() => {
-		if (!enabled || !isVisible || !currentItem || screensaverActive) {
+		if (!enabled || !isVisible || !currentItem || screensaverActive || isMusicPlaying()) {
 			stopTrailer();
 			return;
 		}
