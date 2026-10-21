@@ -396,6 +396,7 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.TOGGLE, key: 'useSeriesThumbnails', label: () => $L('Display Series Thumbnails'), desc: () => $L('For TV series, use the main series artwork instead of the episode thumbnail.'), icon: 'image_aspect_ratio'},
 					{kind: KIND.TOGGLE, key: 'episodePreviewEnabled', label: () => $L('Media Preview'), desc: () => $L('Play a short clip of the focused card after a moment.'), icon: 'play_circle'},
 					{kind: KIND.TOGGLE, key: 'previewAudioEnabled', label: () => $L('Preview Audio'), desc: () => $L('Play the preview with sound.'), icon: 'volume_up', when: (ctx) => !!ctx.settings.episodePreviewEnabled},
+					{kind: KIND.SLIDER, key: 'previewVolume', label: () => $L('Preview Volume'), desc: () => $L('How loud media previews on cards play'), min: 0, max: 100, step: 5, format: percent, icon: 'volume_down', when: (ctx) => !!ctx.settings.episodePreviewEnabled},
 					{kind: KIND.TOGGLE, key: 'homeRowOverlay', label: () => $L('Home Row Info Overlay'), desc: () => $L('Show title and metadata when browsing home rows'), icon: 'info_outline', when: (ctx) => ctx.settings.homeRowsStyle === 'v1'},
 					{kind: KIND.TOGGLE, key: 'hideHomeMediaDescription', label: () => $L('Hide Media Description'), desc: () => $L('Hide the movie or episode descriptive text.'), icon: 'description_outlined'},
 					{kind: KIND.SECTION, id: 'externalSources', label: () => $L('External Sources'), when: whenPlugin},
@@ -522,6 +523,7 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.SECTION, id: 'trailers', label: () => $L('Trailers')},
 					{kind: KIND.TOGGLE, key: 'featuredTrailerPreview', label: () => $L('Trailer Preview'), desc: () => $L('Auto-play trailers in the media bar after 3 seconds'), icon: 'movie_outlined'},
 					{kind: KIND.TOGGLE, key: 'featuredTrailerMuted', label: () => $L('Mute Trailer Audio'), desc: () => $L('Mute trailer previews in the featured media bar and details screen trailer overlay'), icon: 'volume_up', when: (ctx) => ctx.settings.featuredTrailerPreview},
+					{kind: KIND.SLIDER, key: 'trailerVolume', label: () => $L('Trailer Volume'), desc: () => $L('How loud trailers play in the featured media bar and details screen'), min: 0, max: 100, step: 5, format: percent, icon: 'volume_down', when: (ctx) => ctx.settings.featuredTrailerPreview},
 					{kind: KIND.TOGGLE, key: 'mediaBarTrailerCaptions', label: () => $L('Trailer Captions'), desc: () => $L('Show captions on YouTube trailers in the media bar'), icon: 'closed_caption_outlined', when: (ctx) => ctx.settings.featuredTrailerPreview}
 				]
 			},

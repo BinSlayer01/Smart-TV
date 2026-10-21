@@ -143,6 +143,7 @@ export const defaultSettings = {
 	featuredBarStyle: 'moonfin',
 	featuredTrailerPreview: true,
 	featuredTrailerMuted: false,
+	trailerVolume: 100,
 	mediaBarTrailerCaptions: false,
 	mediaBarOverlayColor: 'gray',
 	mediaBarOverlayOpacity: 50,
@@ -233,6 +234,7 @@ export const defaultSettings = {
 	// The server keys, as the other clients store them, so they sync as they are.
 	episodePreviewEnabled: false,
 	previewAudioEnabled: true,
+	previewVolume: 100,
 	homeRowsPosterSize: 'default',
 	classicHomeRowsPadding: 30,
 	modernHomeRowsPadding: 420,

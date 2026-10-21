@@ -210,6 +210,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 		effectiveApi,
 		onPlay,
 		trailerMuted: settings.featuredTrailerMuted,
+		trailerVolume: settings.trailerVolume,
 		seerrOnly,
 		backRef: trailerBackRef
 	});
