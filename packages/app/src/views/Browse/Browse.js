@@ -35,6 +35,7 @@ import {buildBrowseRows, sameRowList} from './buildBrowseRows';
 import css from './Browse.module.less';
 
 const FOCUS_DELAY_MS = 100;
+const BACKDROP_SETTLE_MS = 250;
 
 const LOADING_ROW_TITLE_WIDTHS = skeletonTitleWidths(4, 24);
 
@@ -106,6 +107,7 @@ const Browse = ({
 	const prevFilteredRowsRef = useRef([]);
 	const filteredRowsRef = useRef([]);
 	const rowRefsMap = useRef(new Map());
+	const rowNodesRef = useRef(new Map());
 	const initialFocusSetRef = useRef(false);
 	const scrollTimeoutRef = useRef(null);
 	const contentRowsRef = useRef(null);
@@ -116,6 +118,7 @@ const Browse = ({
 	const showFeaturedBar = (settings.featuredBarStyle !== 'off');
 
 	const registerRowRef = useCallback((rowIndex, element) => {
+		rowNodesRef.current.delete(rowIndex);
 		if (element) {
 			rowRefsMap.current.set(rowIndex, element);
 		} else {
@@ -169,6 +172,17 @@ const Browse = ({
 		getItemServerUrl,
 		homeRowsConfig
 	});
+
+	// The rows keep the focus callbacks they mounted with, so those read the current values here.
+	const liveRef = useRef(null);
+	liveRef.current = {
+		browseMode,
+		showTopInfoArea,
+		useModernRows,
+		navbarPosition: settings.navbarPosition,
+		onFocusItemThemeMusic,
+		onBlurItemThemeMusic
+	};
 
 	// Filtered here rather than where the bar loads, so slides cached before a rating was blocked
 	// drop out too.
@@ -263,15 +277,39 @@ const Browse = ({
 		if (!container) return;
 		// The ref a row hands over is the spotlight container component rather
 		// than its div, so the real node is looked up by the index stamped on it.
-		const registered = rowRefsMap.current.get(rowIndex);
-		const targetRow = registered && typeof registered.offsetTop === 'number'
-			? registered
-			: container.querySelector(`[data-row-index="${rowIndex}"]`);
-		if (!targetRow) return;
-		const topbarOffset = showTopInfoArea && settings.navbarPosition !== 'left' ? 20 : 0;
+		let targetRow = rowNodesRef.current.get(rowIndex);
+		if (!targetRow) {
+			const registered = rowRefsMap.current.get(rowIndex);
+			targetRow = registered && typeof registered.offsetTop === 'number'
+				? registered
+				: container.querySelector(`[data-row-index="${rowIndex}"]`);
+			if (!targetRow) return;
+			rowNodesRef.current.set(rowIndex, targetRow);
+		}
+		const {showTopInfoArea: overlay, navbarPosition} = liveRef.current;
+		const topbarOffset = overlay && navbarPosition !== 'left' ? 20 : 0;
 		const top = Math.max(0, targetRow.offsetTop - topbarOffset);
 		if (Math.abs(container.scrollTop - top) > 1) container.scrollTop = top;
-	}, [settings.navbarPosition, showTopInfoArea]);
+	}, []);
+
+	// Focus scrolling lands wherever the engine likes, sometimes with the row's bottom past the
+	// screen, and it lands after the focus handlers, so the row is put back at its resting spot on
+	// the frames behind it. However many moves ask, each frame settles once.
+	const settleRef = useRef({row: -1, passes: 0, frame: 0});
+	const settleRow = useCallback((rowIndex, passes) => {
+		const settle = settleRef.current;
+		settle.row = rowIndex;
+		settle.passes = Math.max(settle.passes, passes);
+		if (settle.frame) return;
+		const step = () => {
+			settle.frame = 0;
+			pinMainScroll();
+			restRowScroll(settle.row);
+			settle.passes -= 1;
+			if (settle.passes > 0) settle.frame = window.requestAnimationFrame(step);
+		};
+		settle.frame = window.requestAnimationFrame(step);
+	}, [pinMainScroll, restRowScroll]);
 
 	const scrollToRow = useCallback((rowIndex, thenFocus, cardIndex, cardId) => {
 		if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
@@ -286,11 +324,8 @@ const Browse = ({
 		// A row is only measured once it renders, so landing on one that was still
 		// standing in at a guessed height leaves it above the screen with its cards
 		// cut off. Settling once it is real puts it where it was asked to go.
-		const settle = (passes) => {
-			restRowScroll(rowIndex);
-			if (passes > 0) window.requestAnimationFrame(() => settle(passes - 1));
-		};
-		settle(2);
+		restRowScroll(rowIndex);
+		settleRow(rowIndex, 2);
 
 		if (thenFocus) {
 			let attempts = 0;
@@ -305,7 +340,7 @@ const Browse = ({
 			};
 			scrollTimeoutRef.current = setTimeout(tryFocus, 0);
 		}
-	}, [focusRow, restRowScroll]);
+	}, [focusRow, restRowScroll, settleRow]);
 
 	// A placeholder holds a loading section's place but has nothing to focus, so moving between
 	// rows steps over it.
@@ -580,42 +615,46 @@ const Browse = ({
 	}, [setBrowseMode]);
 
 	const handleRowFocus = useCallback((rowIndex) => {
-		pinMainScroll();
-		if (browseMode !== 'rows') {
+		if (liveRef.current.browseMode !== 'rows') {
 			setBrowseMode('rows');
 		}
-		if (typeof rowIndex === 'number') {
-			lastFocusedRowRef.current = rowIndex;
-			// A pointer hover focuses whatever it crosses, and pulling that row
-			// to its resting spot would make the screen chase the cursor, so the
-			// pin only answers key driven focus.
-			if (!Spotlight.getPointerMode()) {
-				// Focus scrolling lands wherever the engine likes, sometimes with the
-				// row's bottom past the screen, and it lands after this handler, so the
-				// focused row is put back at its resting spot on the frames behind it.
-				restRowScroll(rowIndex);
-				window.requestAnimationFrame(() => restRowScroll(rowIndex));
-				window.requestAnimationFrame(() => window.requestAnimationFrame(() => restRowScroll(rowIndex)));
-			}
+		if (typeof rowIndex !== 'number') return;
+		const rowChanged = rowIndex !== lastFocusedRowRef.current;
+		lastFocusedRowRef.current = rowIndex;
+		// A pointer hover focuses whatever it crosses, and pulling that row
+		// to its resting spot would make the screen chase the cursor, so the
+		// pin only answers key driven focus.
+		if (Spotlight.getPointerMode()) {
+			pinMainScroll();
+			return;
 		}
-	}, [browseMode, setBrowseMode, pinMainScroll, restRowScroll]);
+		settleRow(rowIndex, rowChanged ? 2 : 1);
+	}, [setBrowseMode, pinMainScroll, settleRow]);
 
+	const backdropTimerRef = useRef(null);
 	const handleFocusItem = useCallback((item) => {
-		pinMainScroll();
-		if (showTopInfoArea) {
+		const live = liveRef.current;
+		if (live.showTopInfoArea) {
 			detailSectionRef.current?.handleFocusItem(item);
-		} else if (!useModernRows) {
+		} else if (!live.useModernRows) {
 			// The info overlay used to be the only feed into the backdrop, so
 			// turning it off silently killed backdrops with it. Classic rows hand
-			// the item over directly when the overlay is not there to do it.
-			setFocusedItemForBackdrop(item);
+			// the item over directly when the overlay isn't there to do it, once
+			// focus stops moving.
+			clearTimeout(backdropTimerRef.current);
+			backdropTimerRef.current = setTimeout(() => setFocusedItemForBackdrop(item), BACKDROP_SETTLE_MS);
 		}
 		if (item?.Id && (item.Type === 'Movie' || item.Type === 'Series')) {
-			onFocusItemThemeMusic?.(item.Id);
+			live.onFocusItemThemeMusic?.(item.Id);
 		} else {
-			onBlurItemThemeMusic?.();
+			live.onBlurItemThemeMusic?.();
 		}
-	}, [onFocusItemThemeMusic, onBlurItemThemeMusic, showTopInfoArea, useModernRows, pinMainScroll]);
+	}, []);
+
+	useEffect(() => () => {
+		clearTimeout(backdropTimerRef.current);
+		window.cancelAnimationFrame(settleRef.current.frame);
+	}, []);
 
 	const navOffsetClass = settings.navbarPosition === 'left' ? css.sidebarOffset : css.topbarOffset;
 	const rowsClipClass = showTopInfoArea ? '' : css.rowsClipTop;
