@@ -3,13 +3,13 @@ import {getDeviceId} from '../../services/jellyfinApi';
 import {getDeviceCapabilities} from '../../services/deviceProfile';
 import serverLogger from '../../services/serverLogger';
 import {
-	PREVIEW_DWELL_MS,
 	PREVIEW_OPEN_TIMEOUT_MS,
 	PREVIEW_PLAY_CAP_MS,
 	buildMediaPreviewUrl,
 	newPlaySessionId,
 	pickPreviewAudioIndex,
 	previewApiFor,
+	previewDwellMs,
 	previewSegmentContainer,
 	previewServerOf,
 	previewStartSeconds,
@@ -269,7 +269,7 @@ export const createMediaPreviewController = ({getSettings, api, onThemeMusicHold
 		timers.dwell = setTimeout(() => {
 			timers.dwell = null;
 			if (isActive(entry.requestId)) resolve(entry);
-		}, PREVIEW_DWELL_MS);
+		}, previewDwellMs());
 	};
 
 	const cancel = (key) => {
