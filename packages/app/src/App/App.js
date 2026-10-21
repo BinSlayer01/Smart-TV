@@ -72,6 +72,7 @@ import {resolveOverlayColor} from '../theme/overlayColors';
 import Login from '../views/Login';
 import Browse from '../views/Browse';
 import {isGameLibrary, refreshGameLibraries, resolveGameLibraryId} from '../utils/gameLibrary';
+import {afterHomeReady} from '../utils/homeReady';
 import {setMusicPlaying} from '../utils/sharedVideoOwner';
 
 const Details = lazy(() => import('../views/Details'));
@@ -461,7 +462,7 @@ const AppContent = (props) => {
 				setLibraries(libs);
 				// Warm the plugin's game library list so selecting a tile can tell a game
 				// library from a normal one without waiting on a request.
-				refreshGameLibraries();
+				afterHomeReady().then(refreshGameLibraries);
 			} catch (err) {
 				console.error('Failed to fetch libraries:', err);
 			}

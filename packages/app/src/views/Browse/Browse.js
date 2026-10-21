@@ -31,11 +31,20 @@ import useSeerrRows from './useSeerrRows';
 import useExternalRows from './useExternalRows';
 import useMediaPreview from './useMediaPreview';
 import {buildBrowseRows, sameRowList} from './buildBrowseRows';
+import {markHomeReady} from '../../utils/homeReady';
 
 import css from './Browse.module.less';
 
 const FOCUS_DELAY_MS = 100;
 const BACKDROP_SETTLE_MS = 250;
+// Home draws its first rows and adds the rest one at a time, so a slow TV shows something to focus
+// sooner. Focus always has a couple of built rows below it.
+const FIRST_ROWS = 3;
+const ROWS_AHEAD = 2;
+const ROW_MOUNT_GAP_MS = 50;
+// Engines without lazy loading fetch every poster on the page, so rows further down wait for theirs
+// until focus comes near.
+const NATIVE_LAZY_IMAGES = typeof document === 'undefined' || 'loading' in document.createElement('img');
 
 const LOADING_ROW_TITLE_WIDTHS = skeletonTitleWidths(4, 24);
 
@@ -114,6 +123,12 @@ const Browse = ({
 	const scrollsRef = useRef(new Map());
 	const isVisibleRef = useRef(isVisible);
 	isVisibleRef.current = isVisible;
+	// Coming back to a card means its row has to be there already.
+	const [mountedRows, setMountedRows] = useState(() => (lastFocusState ? Infinity : FIRST_ROWS));
+	const mountedRowsRef = useRef(mountedRows);
+	mountedRowsRef.current = mountedRows;
+	const pendingScrollRef = useRef(null);
+	const [imageRows, setImageRows] = useState(FIRST_ROWS);
 
 	const showFeaturedBar = (settings.featuredBarStyle !== 'off');
 
@@ -313,6 +328,11 @@ const Browse = ({
 
 	const scrollToRow = useCallback((rowIndex, thenFocus, cardIndex, cardId) => {
 		if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+		if (rowIndex >= mountedRowsRef.current) {
+			pendingScrollRef.current = [rowIndex, thenFocus, cardIndex, cardId];
+			setMountedRows(rowIndex + 1 + ROWS_AHEAD);
+			return;
+		}
 
 		const targetRow = rowRefsMap.current.get(rowIndex);
 		const container = contentRowsRef.current;
@@ -341,6 +361,24 @@ const Browse = ({
 			scrollTimeoutRef.current = setTimeout(tryFocus, 0);
 		}
 	}, [focusRow, restRowScroll, settleRow]);
+
+	// Run after the new rows have registered themselves.
+	useEffect(() => {
+		const pending = pendingScrollRef.current;
+		if (!pending) return;
+		pendingScrollRef.current = null;
+		scrollToRow(...pending);
+	}, [mountedRows, scrollToRow]);
+
+	useEffect(() => {
+		if (isLoading || mountedRows >= filteredRows.length) return undefined;
+		const timer = setTimeout(() => setMountedRows((count) => count + 1), ROW_MOUNT_GAP_MS);
+		return () => clearTimeout(timer);
+	}, [isLoading, mountedRows, filteredRows.length]);
+
+	useEffect(() => {
+		if (!isLoading && isVisible) markHomeReady();
+	}, [isLoading, isVisible]);
 
 	// A placeholder holds a loading section's place but has nothing to focus, so moving between
 	// rows steps over it.
@@ -621,6 +659,11 @@ const Browse = ({
 		if (typeof rowIndex !== 'number') return;
 		const rowChanged = rowIndex !== lastFocusedRowRef.current;
 		lastFocusedRowRef.current = rowIndex;
+		if (rowChanged) {
+			const wanted = rowIndex + 1 + ROWS_AHEAD;
+			setMountedRows((count) => Math.max(count, wanted));
+			if (!NATIVE_LAZY_IMAGES) setImageRows((count) => Math.max(count, wanted));
+		}
 		// A pointer hover focuses whatever it crosses, and pulling that row
 		// to its resting spot would make the screen chase the cursor, so the
 		// pin only answers key driven focus.
@@ -779,7 +822,7 @@ const Browse = ({
 					className={`${css.contentRows} ${browseMode === 'rows' ? css.rowsMode : ''} ${rowsClipClass}`}
 				>
 					{filteredRows.map((row, index) => {
-						if (row.isPlaceholder) {
+						if (row.isPlaceholder || index >= mountedRows) {
 							return (
 								<RowComponent
 									key={row.id}
@@ -857,6 +900,7 @@ const Browse = ({
 								rowSpacing={rowSpacing}
 								subtitle={row.subtitle}
 								registerRowRef={registerRowRef}
+								deferImages={!NATIVE_LAZY_IMAGES && index >= imageRows}
 							/>
 						);
 					})}

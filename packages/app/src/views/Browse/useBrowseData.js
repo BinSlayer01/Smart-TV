@@ -221,6 +221,12 @@ const useBrowseData = ({
 
 	useEffect(() => cancelPendingCacheSave, []);
 
+	// Only the "since you watched" rows read the Seerr state, and it settles a moment after launch,
+	// so Home only loads again for it when one of those rows is on.
+	const recommendationState = homeRowsConfig.some((row) => row.enabled && row.id.startsWith('sinceyouwatched'))
+		? `${seerrEnabled}|${seerrAuthenticated}|${recommendationsSupported}`
+		: '';
+
 	useEffect(() => {
 		let cancelled = false;
 
@@ -579,9 +585,7 @@ const useBrowseData = ({
 		settings.sinceYouWatchedSourceType,
 		settings.sinceYouWatchedIncludeWatched,
 		settings.tmdbApiKey,
-		seerrEnabled,
-		seerrAuthenticated,
-		recommendationsSupported,
+		recommendationState,
 		settings.rewatchIncludeMovies,
 		settings.rewatchIncludeShows,
 		settings.rewatchIncludeCollections,

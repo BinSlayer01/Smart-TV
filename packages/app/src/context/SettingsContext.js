@@ -81,13 +81,15 @@ const LOCAL_TO_SERVER = Object.fromEntries(
 );
 
 // Synced values are all JSON, so comparing structure is enough to tell a genuinely new
-// value from a fresh copy of the one we already have.
-const sameSyncedValue = (left, right) => {
+// value from a fresh copy of the one we already have. Key order doesn't count, and neither does
+// the _id webOS puts on every object in a list, since its database hands settings back that way.
+export const sameSyncedValue = (left, right) => {
 	if (left === right) return true;
-	if (typeof left !== typeof right) return false;
-	if (left === null || right === null) return false;
-	if (typeof left !== 'object') return false;
-	return JSON.stringify(left) === JSON.stringify(right);
+	if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
+	if (Array.isArray(left) !== Array.isArray(right)) return false;
+	const keys = Object.keys(left).filter((key) => key !== '_id');
+	if (keys.length !== Object.keys(right).filter((key) => key !== '_id').length) return false;
+	return keys.every((key) => sameSyncedValue(left[key], right[key]));
 };
 
 const normalizeHomeRowsStyle = (value) => {

@@ -97,7 +97,7 @@ const episodeArtwork = (item, serverUrl, imageType, useSeriesArt) => {
 	return preferred || still;
 };
 
-const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'poster', onSelect, onFocusItem, showServerBadge = false, eagerLoad = false, seerrSeasonStatus, spotlightId, onSpotlightLeft, onSpotlightRight, menuOptions, size}) => {
+const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'poster', onSelect, onFocusItem, showServerBadge = false, eagerLoad = false, deferImage = false, seerrSeasonStatus, spotlightId, onSpotlightLeft, onSpotlightRight, menuOptions, size}) => {
 	const {settings} = useSettings();
 	const focusTimeoutRef = useRef(null);
 
@@ -297,8 +297,8 @@ const MediaCard = ({item, serverUrl, cardType = 'portrait', rowImageType = 'post
 					<>
 						<img
 							className={css.image}
-							src={imageUrl}
-							alt={item.Name}
+							src={deferImage ? undefined : imageUrl}
+							alt={deferImage ? '' : item.Name}
 							loading={eagerLoad ? 'eager' : 'lazy'}
 							width={cardWidth}
 							height={cardHeight}
