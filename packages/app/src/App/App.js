@@ -942,7 +942,8 @@ const AppContent = (props) => {
 			return;
 		}
 		if (panelIndex === PANELS.DETAILS && selectedItem) {
-			detailsItemStackRef.current.push(selectedItem);
+			// One episode to the next takes its place, so Back leaves the run of episodes in one press.
+			if (selectedItem.Type !== 'Episode' || item.Type !== 'Episode') detailsItemStackRef.current.push(selectedItem);
 			setSelectedItem(item);
 		} else {
 			detailsItemStackRef.current = [];
