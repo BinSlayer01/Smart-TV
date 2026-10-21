@@ -6,6 +6,7 @@ import Hls from 'hls.js';
 import * as playback from '../../services/playback';
 import {getImageUrl, getLogoUrl} from '../../utils/helpers';
 import {api as jellyfinApi, createApiForServer, getServerUrl} from '../../services/jellyfinApi';
+import {getApiForItem} from '../../services/connectionPool';
 import AudioMode from './audio/AudioMode';
 import useAudioTransport from './audio/useAudioTransport';
 import useLyrics from './audio/useLyrics';
@@ -213,7 +214,6 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	const [hasTriedTranscode, setHasTriedTranscode] = useState(false);
 	const [focusRow, setFocusRow] = useState('bottom');
 	const [isAudioMode, setIsAudioMode] = useState(false);
-	const [audioTab, setAudioTab] = useState('queue');
 	const [isFavorite, setIsFavorite] = useState(false);
 	const [zoomMode, setZoomMode] = useState(() => zoomInternalFromSetting(settings.playerZoomMode));
 	const [videoDisplayAspectRatio, setVideoDisplayAspectRatio] = useState(null);
@@ -352,10 +352,11 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	const {
 		shuffleMode, repeatMode, hasNextTrack, hasPrevTrack,
 		handleToggleShuffle, handleToggleRepeat, setShuffleMode, setRepeatMode, handleNextTrack, handlePrevTrack,
-		handleSelectQueueTrack, handleSeekToLyric, handleEnterAudioPanel, getNextStep
+		handleSelectQueueTrack, handleSeekToLyric, audioPanel, handleSelectAudioPanel, getNextStep
 	} = useAudioTransport({
 		item, audioPlaylist, isAudioMode, onPlayNext, positionRef,
-		restartCurrent, seekTo, getPositionSeconds, setFocusRow
+		restartCurrent, seekTo, getPositionSeconds, setFocusRow,
+		hasLyrics: lyrics.lines.length > 0
 	});
 
 	const destroyHlsPlayer = () => {
@@ -459,7 +460,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		shuffleMode, repeatMode, selectedQuality,
 		selectedSubtitleIndex, canDownloadRemoteSubtitles: !isAudioMode && Boolean(item?.Id), hasCastMembers, zoomModeLabel, zoomModeKey: zoomMode,
 		sleepMinutes,
-		canBrowseEpisodes: canBrowseEpisodes({item, isLiveTV, isAudioMode})
+		canBrowseEpisodes: canBrowseEpisodes({item, isLiveTV, isAudioMode}),
+		isFavorite, hasLyrics: lyrics.lines.length > 0, audioPanel
 	});
 
 	useEffect(() => {
@@ -2803,9 +2805,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		const newState = !isFavorite;
 		setIsFavorite(newState);
 		try {
-			const serverUrl = item._serverUrl || getServerUrl();
-			const serverApi = serverUrl ? createApiForServer(serverUrl) : jellyfinApi;
-			await serverApi.setFavorite(item.Id, newState);
+			await (getApiForItem(item) || jellyfinApi).setFavorite(item.Id, newState);
 		} catch (err) {
 			console.error('[Player] Failed to toggle favorite:', err);
 			setIsFavorite(!newState);
@@ -2874,9 +2874,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			case 'shuffle': handleToggleShuffle(); break;
 			case 'repeat': handleToggleRepeat(); break;
 			case 'favorite': handleToggleFavorite(); break;
+			case 'addToPlaylist': openModal('playlist'); break;
+			case 'lyrics':
+			case 'queue': handleSelectAudioPanel(action); break;
 			default: break;
 		}
-	}, [showControls, handlePlayPause, handleRewind, handleForward, openModal, handleOpenCast, handleToggleZoom, handleOpenGuide, openCarousel, handlePlayNextNow, handleNextTrack, handlePrevTrack, handleToggleShuffle, handleToggleRepeat, handleToggleFavorite]);
+	}, [showControls, handlePlayPause, handleRewind, handleForward, openModal, handleOpenCast, handleToggleZoom, handleOpenGuide, openCarousel, handlePlayNextNow, handleNextTrack, handlePrevTrack, handleToggleShuffle, handleToggleRepeat, handleToggleFavorite, handleSelectAudioPanel]);
 
 	const handleControlButtonClick = useCallback((e) => {
 		const action = e.currentTarget.dataset.action;
@@ -3153,7 +3156,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				e.preventDefault();
 				e.stopPropagation();
 				if (activeModal) {
-					closeModal();
+					// The playlist dialog takes Back itself so it can leave its name form first
+					if (activeModal !== 'playlist') closeModal();
 					return;
 				}
 				// Back leaves the queue or lyrics panel before it leaves the player
@@ -3317,16 +3321,14 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					title={title}
 					subtitle={subtitle}
 					serverUrl={getServerUrl()}
-					isFavorite={isFavorite}
-					onToggleFavorite={handleToggleFavorite}
 					focusRow={focusRow}
-					activeTab={audioTab}
-					onSelectTab={setAudioTab}
-					onEnterPanel={handleEnterAudioPanel}
+					panel={audioPanel}
 					audioPlaylist={audioPlaylist}
 					onSelectTrack={handleSelectQueueTrack}
 					lyrics={lyrics}
 					onSeekToLine={handleSeekToLyric}
+					playlistOpen={activeModal === 'playlist'}
+					onClosePlaylist={closeModal}
 				/>
 			)}
 
