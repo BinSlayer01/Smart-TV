@@ -35,7 +35,6 @@ import {buildBrowseRows, sameRowList} from './buildBrowseRows';
 import css from './Browse.module.less';
 
 const FOCUS_DELAY_MS = 100;
-const TRANSITION_DELAY_MS = 450;
 
 const LOADING_ROW_TITLE_WIDTHS = skeletonTitleWidths(4, 24);
 
@@ -551,11 +550,10 @@ const Browse = ({
 		external: (picked) => latestSelectRef.current.external(picked)
 	}), []);
 
+	// The banner unmounts as soon as the mode flips, so the row takes focus right away.
 	const handleNavigateDownFromFeatured = useCallback(() => {
 		setBrowseMode('rows');
-		setTimeout(() => {
-			scrollToRow(focusableRowFrom(0, 1), true);
-		}, TRANSITION_DELAY_MS);
+		scrollToRow(focusableRowFrom(0, 1), true);
 	}, [scrollToRow, setBrowseMode, focusableRowFrom]);
 
 	// Back below the top row returns the list to it rather than leaving, so the exit

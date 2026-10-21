@@ -40,51 +40,6 @@ if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
 	};
 }
 
-// Polyfill: Slider knob positioning for browsers without CSS custom properties
-// (e.g. Tizen 2.4 / WebKit r152340). No-op on modern browsers.
-(function () {
-	if (typeof window === 'undefined') return;
-	if (window.CSS && window.CSS.supports && window.CSS.supports('--a', '0')) return;
-
-	function patchSliderKnobs () {
-		const sliders = document.querySelectorAll('[class*="slider"]');
-		for (let i = 0; i < sliders.length; i++) {
-			const el = sliders[i];
-			const style = el.getAttribute('style');
-			if (!style) continue;
-
-			const match = style.match(/--slider-knob-pct:\s*([^;]+)/);
-			if (match) {
-				const pct = match[1].trim();
-				const knob = el.querySelector('[class*="knob"]');
-				if (knob) {
-					if (el.className.indexOf('vertical') !== -1) {
-						knob.style.bottom = pct;
-					} else {
-						knob.style.left = pct;
-					}
-				}
-			}
-		}
-	}
-
-	let rafId;
-	function schedulePatch () {
-		if (rafId) return;
-		rafId = window.requestAnimationFrame(function () {
-			rafId = null;
-			patchSliderKnobs();
-			schedulePatch();
-		});
-	}
-
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', schedulePatch);
-	} else {
-		schedulePatch();
-	}
-})();
-
 if (isTizen()) {
 	enforceTizenViewport();
 	registerKeys(ESSENTIAL_KEY_NAMES);

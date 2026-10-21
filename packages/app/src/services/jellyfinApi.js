@@ -246,8 +246,34 @@ const request = async (endpoint, options = {}) => {
 	return JSON.parse(text);
 };
 
-export function reportCapabilities() {
+let userRead = null;
+
+// Several callers read the user as the app starts, so a read still on its way, or one answered
+// in the last few seconds, is shared.
+const readCurrentUser = () => {
+	const session = `${currentServer}|${currentUser}|${accessToken}`;
+	if (userRead && userRead.session === session && (!userRead.at || Date.now() - userRead.at < 5000)) {
+		return userRead.promise;
+	}
+	const entry = {session, at: 0, promise: request(`/Users/${currentUser}`)};
+	userRead = entry;
+	entry.promise.then(() => {
+		entry.at = Date.now();
+	}, () => {
+		if (userRead === entry) userRead = null;
+	});
+	return entry.promise;
+};
+
+let capabilitiesSent = null;
+
+// Signing in reports what this session can do and the socket opening a moment later would send it
+// again, so the socket skips a report made for the same session in the last few seconds.
+export function reportCapabilities({unlessRecent = false} = {}) {
 	if (!currentServer || !accessToken) return;
+	const session = `${currentServer}|${accessToken}`;
+	if (unlessRecent && capabilitiesSent?.session === session && Date.now() - capabilitiesSent.at < 10000) return;
+	capabilitiesSent = {session, at: Date.now()};
 	request('/Sessions/Capabilities/Full', {
 		method: 'POST',
 		body: {
@@ -522,14 +548,17 @@ export const api = {
 
 	getMediaSegments: (itemId) => request(`/MediaSegments/${itemId}`),
 
-	getUserConfiguration: () => request(`/Users/${currentUser}`),
+	getUserConfiguration: () => readCurrentUser(),
 
 	getCurrentUser: () => request('/Users/Me'),
 
-	updateUserConfiguration: (config) => request(userRoutes.configuration(), {
-		method: 'POST',
-		body: config
-	}),
+	updateUserConfiguration: (config) => {
+		userRead = null;
+		return request(userRoutes.configuration(), {
+			method: 'POST',
+			body: config
+		});
+	},
 
 	getLatest: (libraryId, limit = 20) =>
 		request(`${userRoutes.latest()}ParentId=${libraryId}&Limit=${limit}&Fields=${encodeURIComponent(HOME_ROW_ITEM_FIELDS)}&ImageTypeLimit=1&GroupItems=true`),

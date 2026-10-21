@@ -541,7 +541,7 @@ export const AuthProvider = ({children}) => {
 		userDataSync.bindTo(serverSocket.onMessage, jellyfinApi.getUserId());
 		remoteControl.bindTo(serverSocket.onMessage);
 		const stopReporting = serverSocket.onConnectionChange((open) => {
-			if (open) jellyfinApi.reportCapabilities();
+			if (open) jellyfinApi.reportCapabilities({unlessRecent: true});
 		});
 		return () => {
 			stopReporting();

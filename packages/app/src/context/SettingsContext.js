@@ -10,6 +10,7 @@ import {applyOledMode} from '../utils/oledMode';
 import {normalizeRatingSources, ratingSourcesToServer} from '../utils/ratingSources';
 import {SEASONAL_DENSITIES, normalizeSeasonalTheme} from '../utils/seasonalEffects';
 import {normalizeSeasonalHiddenHolidays, normalizeSeasonalRowCountry} from '../utils/seasonalRow';
+import {sharePending} from '../utils/sharePending';
 import {
 	IMAGES as LOADING_IMAGES,
 	POSITIONS as LOADING_POSITIONS,
@@ -979,7 +980,7 @@ export function SettingsProvider({children}) {
 		});
 	}, []);
 
-	const syncFromServer = useCallback(async (serverUrl, token) => {
+	const pullFromServer = useCallback(async (serverUrl, token) => {
 		try {
 			serverCredsRef.current = {serverUrl, token};
 
@@ -1114,6 +1115,9 @@ export function SettingsProvider({children}) {
 			return 'error';
 		}
 	}, []);
+
+	// More than one caller pulls at launch, so a pull already running for the same server and token is shared.
+	const syncFromServer = useMemo(() => sharePending((serverUrl, token) => `${serverUrl}|${token}`, pullFromServer), [pullFromServer]);
 
 	// Mirrors Moonfin-Core's syncOnLogin. The first time a server is seen it detects
 	// the plugin and, if it answers, turns sync on and pulls whatever profile it holds.
