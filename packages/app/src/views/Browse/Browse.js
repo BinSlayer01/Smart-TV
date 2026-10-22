@@ -380,6 +380,32 @@ const Browse = ({
 		if (!isLoading && isVisible) markHomeReady();
 	}, [isLoading, isVisible]);
 
+	// A pointer scrolls the rows without moving focus, so where posters wait for focus they also
+	// follow whichever rows have come on screen.
+	useEffect(() => {
+		const node = contentRowsRef.current;
+		if (NATIVE_LAZY_IMAGES || isLoading || !node) return undefined;
+		let frame = 0;
+		const reveal = () => {
+			frame = 0;
+			const bottom = node.scrollTop + node.clientHeight;
+			const rows = node.querySelectorAll('[data-row-index]');
+			let last = -1;
+			for (let i = 0; i < rows.length; i++) {
+				if (rows[i].offsetTop < bottom) last = Math.max(last, Number(rows[i].getAttribute('data-row-index')));
+			}
+			if (last >= 0) setImageRows((count) => Math.max(count, last + 1 + ROWS_AHEAD));
+		};
+		const onScroll = () => {
+			if (!frame) frame = window.requestAnimationFrame(reveal);
+		};
+		node.addEventListener('scroll', onScroll);
+		return () => {
+			node.removeEventListener('scroll', onScroll);
+			window.cancelAnimationFrame(frame);
+		};
+	}, [isLoading]);
+
 	// A placeholder holds a loading section's place but has nothing to focus, so moving between
 	// rows steps over it.
 	const focusableRowFrom = useCallback((fromRowIndex, step) => {
@@ -820,6 +846,7 @@ const Browse = ({
 				<div
 					ref={contentRowsRef}
 					className={`${css.contentRows} ${browseMode === 'rows' ? css.rowsMode : ''} ${rowsClipClass}`}
+					data-pointer-rows
 				>
 					{filteredRows.map((row, index) => {
 						if (row.isPlaceholder || index >= mountedRows) {
