@@ -141,6 +141,8 @@ const PLAYBACK_TIMEOUT_MS = 120000;
 // Some servers answer a people search far slower than everything else, so it
 // gets a limit of its own rather than holding the other results back.
 const PEOPLE_SEARCH_TIMEOUT_MS = 10000;
+// The playback information dialog waits on this, so it gives up quickly and goes without.
+const OWN_SESSION_TIMEOUT_MS = 1500;
 export const HOME_ROW_ITEM_FIELDS = 'DateCreated,PremiereDate,PrimaryImageAspectRatio,OfficialRating,Overview,Genres,GenreItems,ProductionYear,RunTimeTicks,CommunityRating,CriticRating,ProviderIds,ImageTags,BackdropImageTags,ParentBackdropImageTags,ParentBackdropItemId,ParentThumbItemId,ParentLogoItemId,ParentLogoImageTag,SeriesPrimaryImageTag,ParentPrimaryImageTag,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,UserData,AlbumArtist,AlbumId,AlbumPrimaryImageTag';
 
 // The home Next Up row asks the server for a window instead of the whole watch
@@ -620,6 +622,8 @@ export const api = {
 		method: 'POST',
 		body: data
 	}),
+
+	getOwnSessions: () => request(`/Sessions?DeviceId=${encodeURIComponent(deviceId)}`, {timeoutMs: OWN_SESSION_TIMEOUT_MS}),
 
 	closeLiveStream: (liveStreamId) => request(`/LiveStreams/Close?LiveStreamId=${encodeURIComponent(liveStreamId)}`, {
 		method: 'POST'
@@ -1227,6 +1231,8 @@ export const createApiForServer = (serverUrl, token, userId, serverTypeOverride 
 			serverRequest(`/Videos/ActiveEncodings?deviceId=${encodeURIComponent(deviceId)}&playSessionId=${encodeURIComponent(playSessionId)}`, {
 				method: 'DELETE'
 			}),
+
+		getOwnSessions: () => serverRequest(`/Sessions?DeviceId=${encodeURIComponent(deviceId)}`, {timeoutMs: OWN_SESSION_TIMEOUT_MS}),
 
 		closeLiveStream: (liveStreamId) => serverRequest(`/LiveStreams/Close?LiveStreamId=${encodeURIComponent(liveStreamId)}`, {
 			method: 'POST'

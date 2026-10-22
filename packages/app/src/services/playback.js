@@ -1569,6 +1569,17 @@ export const updateCurrentSession = (updates) => {
 
 export const isDirectPlay = () => currentSession?.playMethod === PlayMethod.DirectPlay;
 
+// What the server says it's doing with a running transcode, or nothing when it doesn't answer in time.
+export const getTranscodingInfo = async () => {
+	if (currentSession?.playMethod !== PlayMethod.Transcode) return null;
+	try {
+		const sessions = await apiForSession(currentSession).getOwnSessions();
+		return (Array.isArray(sessions) && sessions[0]?.TranscodingInfo) || null;
+	} catch {
+		return null;
+	}
+};
+
 
 
 export const getPlaybackUrl = async (itemId, startPositionTicks = 0, options = {}) => {

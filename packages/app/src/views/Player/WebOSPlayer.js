@@ -115,31 +115,6 @@ const getWebOSFullscreenRect = () => {
 // request puts the whole group through a round of buffering.
 const GROUP_SEEK_DEBOUNCE_MS = 600;
 
-// Both of these go to PlayerControls as props, so they sit out here and keep one
-// identity instead of being rebuilt on every render.
-const renderInfoPlaybackRows = ({css: c, mediaSource, playMethod}) => {
-	if (playMethod !== 'Transcode') return null;
-	const match = (mediaSource?.TranscodingUrl || '').match(/TranscodeReasons=([^&]+)/);
-	const reason = match
-		? decodeURIComponent(match[1]).split(',').map(r => r.replace(/([A-Z])/g, ' $1').trim()).join(', ')
-		: $L('Unknown');
-	return (
-		<div className={`${c.infoRow} ${c.infoWarning}`}>
-			<span className={c.infoLabel}>{$L('Transcode Reason')}</span>
-			<span className={c.infoValue}>{reason}</span>
-		</div>
-	);
-};
-
-const renderInfoVideoExtra = ({css: c, videoStream}) => (
-	videoStream?.BitDepth ? (
-		<div className={c.infoRow}>
-			<span className={c.infoLabel}>{$L('Bit Depth')}</span>
-			<span className={c.infoValue}>{videoStream.BitDepth}-bit</span>
-		</div>
-	) : null
-);
-
 const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialSubtitleIndex, initialStartPositionTicks, initialQuality, forceTranscode, onEnded, onBack, onGuide, onPlayNext, onSelectPerson, audioPlaylist, videoQueue, liveTvChannels, onPausedChange, background, onBackground}) => {
 	const {settings, updateSetting} = useSettings();
 	const {isInGroup, lastCommand} = useSyncPlay();
@@ -2385,6 +2360,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 
 	const openModal = useCallback((modal) => {
 	  lastFocusedElementRef.current = document.activeElement;
+		// The controls stay up under a dialog, so closing it gives focus back to the button that opened it.
+		clearTimeout(controlsTimeoutRef.current);
 		setActiveModal(modal);
 		window.requestAnimationFrame(() => {
 			const modalId = `${modal}-modal`;
@@ -3485,8 +3462,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				handleSubtitleOffsetChange={handleSubtitleOffsetChange}
 				closeModal={closeModal}
 				stopPropagation={stopPropagation}
-				renderInfoPlaybackRows={renderInfoPlaybackRows}
-				renderInfoVideoExtra={renderInfoVideoExtra}
+				transcodeForced={settings.preferTranscode}
+				videoRef={videoRef}
 			/>}
 		</div>
 	);
