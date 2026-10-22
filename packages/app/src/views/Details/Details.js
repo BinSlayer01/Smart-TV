@@ -1001,7 +1001,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 	const birthPlace = isPerson && showsSection('birthplace') && item.ProductionLocations?.length > 0 ? item.ProductionLocations[0] : '';
 
 	const backdrop = (
-		<DetailBackdrop backdropUrl={backdropUrl} isPerson={isPerson} blur={settings.backdropBlurDetail} />
+		<DetailBackdrop backdropUrl={settings.detailsBackdropEnabled !== false ? backdropUrl : null} isPerson={isPerson} blur={settings.backdropBlurDetail} />
 	);
 
 	const trailerLayer = (
