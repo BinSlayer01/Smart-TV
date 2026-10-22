@@ -666,8 +666,8 @@ export const api = {
 	getStudioCompanies: (tmdbId, mediaType) =>
 		request(`/Moonfin/Tmdb/ProductionCompanies?tmdbId=${encodeURIComponent(tmdbId)}&type=${mediaType === 'tv' ? 'tv' : 'movie'}`),
 
-	// A collection has no order of its own on the server, so the plugin keeps one: a plain list of
-	// item ids. Absent plugin, absent order, and the caller falls back to release order.
+	// The plugin keeps a collection's hand-arranged order as a plain list of item ids. Without the
+	// plugin or a saved order, the caller falls back to the server's order.
 	getCollectionOrder: (collectionId) =>
 		request(`/Moonfin/Collections/${collectionId}/Order`),
 
