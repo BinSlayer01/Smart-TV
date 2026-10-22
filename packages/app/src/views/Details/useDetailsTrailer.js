@@ -11,7 +11,7 @@ import {volumeLevel} from '../../utils/volumeLevel';
 
 // Plays a title's trailer. A local one goes to the real player, and a YouTube link plays in
 // an overlay here, since the player has no way to open a stream that isn't on the server.
-const useDetailsTrailer = ({item, effectiveApi, onPlay, trailerMuted, trailerVolume, seerrOnly, backRef}) => {
+const useDetailsTrailer = ({item, effectiveApi, onPlay, trailerVolume, seerrOnly, backRef}) => {
 	const [trailerOverlay, setTrailerOverlay] = useState(null);
 	const [trailerStreamUrl, setTrailerStreamUrl] = useState(null);
 
@@ -211,12 +211,8 @@ const useDetailsTrailer = ({item, effectiveApi, onPlay, trailerMuted, trailerVol
 
 	useEffect(() => {
 		if (!trailerOverlay || !trailerVideoRef.current) return;
-		const video = trailerVideoRef.current;
-		const muted = !!trailerMuted;
-		video.muted = muted;
-		video.defaultMuted = muted;
-		video.volume = muted ? 0 : volumeLevel(trailerVolume);
-	}, [trailerMuted, trailerVolume, trailerOverlay, trailerStreamUrl]);
+		trailerVideoRef.current.volume = volumeLevel(trailerVolume);
+	}, [trailerVolume, trailerOverlay, trailerStreamUrl]);
 
 	return {
 		trailerOverlay,

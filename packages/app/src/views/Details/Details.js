@@ -210,7 +210,6 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 		item,
 		effectiveApi,
 		onPlay,
-		trailerMuted: settings.featuredTrailerMuted,
 		trailerVolume: settings.trailerVolume,
 		seerrOnly,
 		backRef: trailerBackRef
@@ -1010,7 +1009,6 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 			videoId={trailer.trailerOverlay}
 			streamUrl={trailer.trailerStreamUrl}
 			videoRef={trailer.trailerVideoRef}
-			muted={settings.featuredTrailerMuted}
 			onClose={trailer.handleCloseTrailer}
 		/>
 	);
