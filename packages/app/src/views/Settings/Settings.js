@@ -18,7 +18,8 @@ import ScreensaverPreview from '../../components/Screensaver/ScreensaverPreview'
 import TrickplaySettingsPreview from '../../components/TrickplayPreview/TrickplaySettingsPreview';
 import {LoadingAnimationPreview} from '../../components/LoadingAnimation';
 import {clearAllStorage} from '../../services/storage';
-import {clearCapabilitiesCache} from '../../services/deviceProfile';
+import {clearCapabilitiesCache, getDeviceProfile} from '../../services/deviceProfile';
+import {canTranscodeAudioCodecAway} from '../../utils/deviceProfileTuning';
 import {clearImageCache} from '../../services/imageProxy';
 import {clearProxiedImageCache} from '../../hooks/useProxiedImage';
 import {detectCustomSource, validateCustomRow, buildManualCustomSource, sourceKeyForRow} from '../../utils/externalHomeRows';
@@ -27,7 +28,7 @@ import {checkForUpdatesDetailed} from '../../services/versionChecker';
 import QrLinkView from './QrLinkView';
 import {formatPlaybackTimeSlot} from '../../utils/playbackTimeLabels';
 import {getSubtitleOverlayStyle, getSubtitleTextStyle} from '../../utils/subtitleConstants';
-import {getImageTypeOptions, getLabel, getSubtitleLanguageOptions} from './settingsOptions';
+import {getImageTypeOptions, getLabel, getSubtitleLanguageOptions, getTranscodeAudioCodecOptions} from './settingsOptions';
 import {MAX_SUBTITLE_DOWNLOAD_LANGUAGES} from '../Player/remoteSubtitleUtils';
 import {SCHEMA_BY_KEY, SETTINGS_SCHEMA, resolve, spotlightIdOf} from './settingsSchema';
 import {MIN_QUERY_LENGTH, buildSettingsIndex, matchSettings, resultSpotlightId} from './settingsSearch';
@@ -57,7 +58,7 @@ import {getBlockedRatings, setBlockedRatings} from '../../services/parentalContr
 import useParentalFilter from '../../hooks/useParentalFilter';
 import {SeerrHomeRowsView, ImdbListsView} from './HomeRowToggleViews';
 import {ExternalTmdbListsView, ExternalCalendarsView, ExternalCustomRowsView, SeasonalRowView} from './ExternalRowViews';
-import {RatingSourcesView, ExcludedGenresView, PinCodeView, BlockedRatingsView, RowImageTypesView, SubtitleDownloadLanguagesView} from './PickerViews';
+import {RatingSourcesView, ExcludedGenresView, PinCodeView, BlockedRatingsView, RowImageTypesView, CheckListView} from './PickerViews';
 import {KidsModeSetView, KidsModeExitView} from './KidsModeViews';
 import HomeRowsView from './HomeRowsView';
 import ButtonLayoutView from './ButtonLayoutView';
@@ -255,6 +256,8 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 				Spotlight.focus('blocked-ratings-view');
 			} else if (cv.view === 'subtitleDownloadLanguages') {
 				Spotlight.focus('subtitle-download-languages-view');
+			} else if (cv.view === 'transcodeAudioCodecs') {
+				Spotlight.focus('transcode-audio-codecs-view');
 			} else if (cv.view === 'qrLink') {
 				Spotlight.focus('qr-link-close');
 			} else if (cv.view === 'rowImageTypes') {
@@ -477,6 +480,22 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			updateSetting('subtitleDownloadLanguages', [...picked, language]);
 		}
 	}, [settings.subtitleDownloadLanguages, updateSetting]);
+
+	// Only the codecs this device's transcode can turn into something else are offered, and
+	// the list is settled before the screen opens since it orders its rows once.
+	const [transcodeAudioOptions, setTranscodeAudioOptions] = useState([]);
+	const openTranscodeAudioCodecs = useCallback(async () => {
+		const profile = await getDeviceProfile(serverType, {}, api).catch(() => null);
+		setTranscodeAudioOptions(getTranscodeAudioCodecOptions().filter(({value}) => !profile || canTranscodeAudioCodecAway(profile, value)));
+		pushView({view: 'transcodeAudioCodecs', returnFocusTo: 'setting-transcodeAudioCodecs'});
+	}, [serverType, api, pushView]);
+
+	const toggleTranscodeAudioCodec = useCallback((codec) => {
+		const picked = settings.transcodeAudioCodecs || [];
+		updateSetting('transcodeAudioCodecs', picked.includes(codec)
+			? picked.filter((value) => value !== codec)
+			: [...picked, codec]);
+	}, [settings.transcodeAudioCodecs, updateSetting]);
 
 	const openRatingSources = useCallback(() => {
 		const sources = Array.isArray(settings.mdblistRatingSources) ? [...settings.mdblistRatingSources] : [];
@@ -1002,6 +1021,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			openLibraryOrder,
 			openParentalControls,
 			openSubtitleDownloadLanguages,
+			openTranscodeAudioCodecs,
 			openQrLink,
 			openRatingSources,
 			openRowImageTypes,
@@ -1031,7 +1051,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 		settings, capabilities, seerr, achievements, seerrLabel, isSeerr, serverUrl, ratingsResetArmed, resetRatingsSettings, toggleExperimentalTruehd, updateSetting, refreshPlugin,
 		serverVersion, availableThemes, activeThemeId, openThemes, openThemeStore, openHomeRows,
 		openDetailButtons, openOsdButtons, openDetailMetadata, openDetailSections, openDiagnostics,
-		openPinCode, openKidsMode, openLibraries, openLibraryOrder, openParentalControls, openSubtitleDownloadLanguages, openQrLink, openRatingSources, openRowImageTypes, openExcludedGenres, openMediaBarLibraries,
+		openPinCode, openKidsMode, openLibraries, openLibraryOrder, openParentalControls, openSubtitleDownloadLanguages, openTranscodeAudioCodecs, openQrLink, openRatingSources, openRowImageTypes, openExcludedGenres, openMediaBarLibraries,
 		openMediaBarCollections, openScreensaverLibraries, openScreensaverCollections, openScreensaverGenres,
 		openImdbLists, openSeasonalRow, openExternalTmdbLists, openExternalCalendars,
 		openExternalCustomRows, openSeerrHomeRows, openScreen, onRunSetupWizard, canProbeDevice
@@ -1442,11 +1462,26 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 				<QrLinkView title={baseView.label} url={baseView.url} onClose={popView} />
 			)}
 			{viewName === 'subtitleDownloadLanguages' && (
-				<SubtitleDownloadLanguagesView
+				<CheckListView
+					spotlightId='subtitle-download-languages-view'
+					rowIdPrefix='subtitle-download-language'
+					title={$L('Subtitle Download Languages')}
+					lead={$L('Languages to search when downloading subtitles, up to {max}. With none ticked, one language is picked from the video.').replace('{max}', MAX_SUBTITLE_DOWNLOAD_LANGUAGES)}
 					options={getSubtitleLanguageOptions().filter((option) => option.value)}
 					picked={settings.subtitleDownloadLanguages || []}
 					max={MAX_SUBTITLE_DOWNLOAD_LANGUAGES}
-					onToggleLanguage={toggleSubtitleDownloadLanguage}
+					onToggle={toggleSubtitleDownloadLanguage}
+				/>
+			)}
+			{viewName === 'transcodeAudioCodecs' && (
+				<CheckListView
+					spotlightId='transcode-audio-codecs-view'
+					rowIdPrefix='transcode-audio-codec'
+					title={$L('Transcode Audio Codecs')}
+					lead={$L('The server converts audio in these formats instead of sending it as is.')}
+					options={transcodeAudioOptions}
+					picked={settings.transcodeAudioCodecs || []}
+					onToggle={toggleTranscodeAudioCodec}
 				/>
 			)}
 			{viewName === 'blockedRatings' && (

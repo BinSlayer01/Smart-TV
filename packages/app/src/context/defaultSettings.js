@@ -63,6 +63,7 @@ export const defaultSettings = {
 	waitForAssSubtitles: false,
 	audioPassthroughMode: 'auto',
 	maxAudioChannels: 0,
+	transcodeAudioCodecs: [],
 	downmixToStereo: false,
 	syncPlayAdvancedCorrectionEnabled: true,
 	syncPlayEnableSyncCorrection: true,

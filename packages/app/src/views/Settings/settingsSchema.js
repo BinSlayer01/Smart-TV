@@ -69,6 +69,7 @@ import {
 	getSubtitlePositionOptions,
 	getSubtitleShadowColorOptions,
 	getSubtitleSizeOptions,
+	getTranscodeAudioCodecOptions,
 	getUiLanguageOptions,
 	getUiScaleOptions,
 	getWatchedIndicatorOptions,
@@ -810,7 +811,20 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.TOGGLE, key: 'forceTruehdPassthrough', label: () => $L('Force TrueHD / Atmos Passthrough'), desc: () => $L('Send Dolby TrueHD and Atmos straight to your receiver. Make sure your receiver supports it.'), icon: 'graphic_eq', when: (ctx) => whenTruehdOptIn(ctx) && ctx.isWebOS},
 					{kind: KIND.TOGGLE, key: 'experimentalTruehd', label: () => $L('Experimental TrueHD Attempt'), desc: () => $L('May fall back to PCM, DD+, or AC3. Requires eARC + receiver. Not for TV speakers.'), icon: 'speaker', when: (ctx) => whenTruehdOptIn(ctx) && ctx.isTizen, onToggle: (ctx) => ctx.actions.toggleExperimentalTruehd()},
 					{kind: KIND.SECTION, id: 'audioAdvanced', label: () => $L('Advanced')},
-					{kind: KIND.OPTION, key: 'maxAudioChannels', label: () => $L('Max Audio Channels'), desc: () => $L('Configure the maximum channels of your audio setup. Multichannel streams exceeding this limit will downmix or transcode.'), options: getMaxAudioChannelsOptions, fallback: () => $L('Auto Detect'), icon: 'speaker_group', padded: true}
+					{kind: KIND.OPTION, key: 'maxAudioChannels', label: () => $L('Max Audio Channels'), desc: () => $L('Configure the maximum channels of your audio setup. Multichannel streams exceeding this limit will downmix or transcode.'), options: getMaxAudioChannelsOptions, fallback: () => $L('Auto Detect'), icon: 'speaker_group', padded: true},
+					{
+						kind: KIND.NAV,
+						id: 'transcodeAudioCodecs',
+						label: () => $L('Transcode Audio Codecs'),
+						desc: (ctx) => {
+							const picked = ctx.settings.transcodeAudioCodecs || [];
+							if (picked.length === 0) return $L('None');
+							const options = getTranscodeAudioCodecOptions();
+							return picked.map((codec) => options.find((option) => option.value === codec)?.label || codec).join(', ');
+						},
+						icon: 'transform',
+						action: (ctx) => ctx.actions.openTranscodeAudioCodecs()
+					}
 				]
 			},
 			{
