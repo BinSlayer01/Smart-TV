@@ -31,7 +31,6 @@ import {getImageTypeOptions, getLabel, getSubtitleLanguageOptions} from './setti
 import {MAX_SUBTITLE_DOWNLOAD_LANGUAGES} from '../Player/remoteSubtitleUtils';
 import {SCHEMA_BY_KEY, SETTINGS_SCHEMA, resolve, spotlightIdOf} from './settingsSchema';
 import {MIN_QUERY_LENGTH, buildSettingsIndex, matchSettings, resultSpotlightId} from './settingsSearch';
-import {PLUGIN_SECTION_RENDER_STEP} from './homeSectionsModel';
 import useSeerrAccount from './useSeerrAccount';
 import useProfileSync from './useProfileSync';
 import useThemeStore from './useThemeStore';
@@ -52,6 +51,7 @@ import FriendsScreens, {FRIENDS_VIEWS} from './friends/FriendsScreens';
 import {isConfirmSpendOpen} from './achievements/ConfirmSpendDialog';
 import {kidsModeNeedsPin} from '../../utils/kidsMode';
 import {sortRatingsBySeverity} from '../../utils/parentalFilter';
+import {isPickedRow} from '../../utils/pickedRows';
 import {readServerRatings} from './serverRatings';
 import {getBlockedRatings, setBlockedRatings} from '../../services/parentalControls';
 import useParentalFilter from '../../hooks/useParentalFilter';
@@ -106,7 +106,7 @@ const FIRST_ROW_VIEWS = {
 };
 
 const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, panelMode, initialView }) => {
-	const { api, serverUrl, accessToken, hasMultipleServers, logoutAll, activeServerInfo, user, serverType } = useAuth();
+	const { api, serverUrl, servers, accessToken, hasMultipleServers, logoutAll, activeServerInfo, user, serverType } = useAuth();
 	const {
 		settings, updateSetting, updateSettings, resetSettings, restoreSyncedDefaults, applyServerProfile, selectSyncProfile,
 		availableThemes, activeThemeId, selectThemeById, saveStoreTheme, deleteStoreTheme
@@ -705,10 +705,10 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 	});
 
 	const {
-		tempHomeRows, tempPluginSections, serverHasLiveTv, pluginSectionRenderLimit, setPluginSectionRenderLimit,
+		tempHomeRows, loading: homeRowsLoading, serverHasLiveTv,
 		toggleHomeRowEnabled, toggleSeerrHomeRow, openHomeRows, commitHomeRows, resetHomeRows,
-		toggleHomeRow, moveHomeRow, togglePluginSection, movePluginSection
-	} = useHomeRowsEditor({api, settings, updateSetting, updateSettings, pushView});
+		toggleHomeRow, moveHomeRow
+	} = useHomeRowsEditor({api, serverUrl, servers, settings, updateSetting, updateSettings, pushView});
 
 	const {
 		tempButtons, buttonLayoutKind, openDetailButtons, openOsdButtons, openDetailMetadata,
@@ -1082,10 +1082,6 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 		handleOptionSelect(currentView.settingKey, value);
 	}, [handleOptionSelect, currentView.settingKey]);
 
-	const showMorePluginSections = useCallback(() => {
-		setPluginSectionRenderLimit((prev) => Math.min(tempPluginSections.length, prev + PLUGIN_SECTION_RENDER_STEP));
-	}, [setPluginSectionRenderLimit, tempPluginSections.length]);
-
 	const showMoreLogs = useCallback(() => {
 		setLogRenderLimit((prev) => prev + LOG_RENDER_STEP);
 	}, [setLogRenderLimit]);
@@ -1331,15 +1327,13 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			{viewName === 'homeRows' && (
 				<HomeRowsView
 					settings={settings}
+					serverUrl={serverUrl}
+					servers={servers}
 					tempHomeRows={tempHomeRows}
-					tempPluginSections={tempPluginSections}
+					loading={homeRowsLoading}
 					serverHasLiveTv={serverHasLiveTv}
-					pluginSectionRenderLimit={pluginSectionRenderLimit}
-					onShowMoreSections={showMorePluginSections}
 					onToggleHomeRow={toggleHomeRow}
 					onMoveHomeRow={moveHomeRow}
-					onTogglePluginSection={togglePluginSection}
-					onMovePluginSection={movePluginSection}
 					onReset={resetHomeRows}
 					onLeave={commitHomeRows}
 				/>
@@ -1438,7 +1432,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			)}
 			{viewName === 'rowImageTypes' && (
 				<RowImageTypesView
-					rows={(settings.homeRows || []).filter((row) => row.enabled && row.id !== 'librarybuttons')}
+					rows={(settings.homeRows || []).filter((row) => row.enabled && row.id !== 'librarybuttons' && !isPickedRow(row))}
 					overrides={settings.homeRowImageTypes || {}}
 					globalLabel={getLabel(getImageTypeOptions(), settings.homeRowsImageType, $L('Poster'))}
 					onCycleRow={cycleRowImageType}

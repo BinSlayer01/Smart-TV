@@ -77,7 +77,6 @@ export const defaultSettings = {
 	visualTheme: 'moonfin',
 	customThemeId: '',
 	homeRows: DEFAULT_HOME_ROWS,
-	pluginSections: [],
 	displayFavoritesRows: false,
 	displayCollectionsRows: false,
 	displayGenresRows: false,

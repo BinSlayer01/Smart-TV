@@ -1,6 +1,7 @@
 import {useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo} from 'react';
 import {isKidsMode, kidsModeRows, mergesContinueWatchingNextUp} from '../../utils/kidsMode';
 import {withoutBlocked} from '../../utils/parentalFilter';
+import {isPickedRow, isPickedRowShown} from '../../utils/pickedRows';
 import useParentalFilter from '../../hooks/useParentalFilter';
 import {useUserDataRows} from '../../hooks/useUserDataSync';
 import Spotlight from '@enact/spotlight';
@@ -78,12 +79,12 @@ const Browse = ({
 		return kidsModeRows([...(settings.homeRows || [])].sort((a, b) => a.order - b.order), kidsMode);
 	}, [settings.homeRows, kidsMode]);
 
-	// Plugin rows go too. A plugin renders whatever it was handed, which is not something this
-	// mode is in any position to vouch for.
+	// The collections, genres and playlists given a row of their own. Kids Mode left them out above.
+	const {displayCollectionsRows, displayGenresRows, displayPlaylistsRows, unifiedLibraryMode} = settings;
 	const pluginSectionsConfig = useMemo(() => {
-		if (kidsMode) return [];
-		return [...(settings.pluginSections || [])].sort((a, b) => a.order - b.order);
-	}, [settings.pluginSections, kidsMode]);
+		const gates = {displayCollectionsRows, displayGenresRows, displayPlaylistsRows, unifiedLibraryMode};
+		return homeRowsConfig.filter((row) => isPickedRow(row) && isPickedRowShown(row, gates, serverUrl));
+	}, [homeRowsConfig, displayCollectionsRows, displayGenresRows, displayPlaylistsRows, unifiedLibraryMode, serverUrl]);
 	const {isEnabled: seerrEnabled, isAuthenticated: seerrAuthenticated, user: seerrUser, pluginInfo} = useSeerr();
 	const recommendationsSupported = pluginInfo?.recommendationsSupported === true;
 	const seerrUserId = seerrUser?.seerrUserId;
