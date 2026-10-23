@@ -99,8 +99,8 @@ describe('the Vega play method bitrate caps', () => {
 	test('follows what each stick decodes', () => {
 		expect(h264(25_000_000, 'AFTCA002')).toBe('DirectPlay');
 		expect(h264(25_000_000, 'AFTCR001')).toBe('Transcode');
-		expect(hevc(34_000_000, 'AFTCR001')).toBe('DirectPlay');
-		expect(hevc(36_000_000, 'AFTCA002')).toBe('Transcode');
+		expect(hevc(110_000_000, 'AFTCA002')).toBe('DirectPlay');
+		expect(hevc(130_000_000, 'AFTCR001')).toBe('Transcode');
 		expect(vp9(25_000_000, 'AFTCR001')).toBe('DirectPlay');
 		expect(vp9(25_000_000, 'AFTCL001')).toBe('Transcode');
 	});

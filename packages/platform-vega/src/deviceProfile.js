@@ -6,6 +6,8 @@
 import {bootData} from './bridge';
 import {modelFromUserAgent} from './deviceInfo';
 
+export const MAX_BITRATE = 120_000_000;
+
 let cachedCapabilities = null;
 let probeElement = null;
 
@@ -57,7 +59,11 @@ export const getDeviceCapabilities = async () => {
 		// so the server remuxes it to HLS instead
 		ts: false,
 
-		nativeHls: canPlay('application/vnd.apple.mpegurl')
+		nativeHls: canPlay('application/vnd.apple.mpegurl'),
+
+		// Remuxes play far past the HEVC rate Amazon lists, so Auto asks for as much as the profile
+		// takes and the server copies them instead of re-encoding.
+		autoMaxBitrate: MAX_BITRATE
 	};
 
 	console.log('[deviceProfile] Capabilities:', cachedCapabilities);
@@ -202,8 +208,8 @@ export const getJellyfinDeviceProfile = async () => {
 
 	return {
 		Name: 'Moonfin Fire TV',
-		MaxStreamingBitrate: 120_000_000,
-		MaxStaticBitrate: 120_000_000,
+		MaxStreamingBitrate: MAX_BITRATE,
+		MaxStaticBitrate: MAX_BITRATE,
 		MaxStaticMusicBitrate: 40_000_000,
 		MusicStreamingTranscodingBitrate: 384_000,
 		DirectPlayProfiles: buildDirectPlayProfiles(caps),
