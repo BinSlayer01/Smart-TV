@@ -8,7 +8,7 @@ import {Scroller} from '@enact/sandstone/Scroller';
 
 import MediaCard from '../../components/MediaCard';
 import {SeerrStatusBadge, SeerrDownloadBars} from '../../components/seerr/SeerrStatusBadge';
-import {SeerrChips, SeerrFacts, SeerrCollectionBanner} from '../../components/seerr/SeerrSections';
+import {SeerrChips, SeerrFacts, SeerrStreaming, SeerrCollectionBanner} from '../../components/seerr/SeerrSections';
 import RatingsRow from '../../components/RatingsRow';
 import DetailsTabBar from '../../components/DetailsTabBar';
 import ModernActionButtons from './ModernActionButtons';
@@ -671,12 +671,13 @@ const ModernDetailContent = (props) => {
 	}, []);
 
 	// Everything Seerr adds to a title, in one tab: where it is filed, the production facts,
-	// what it is like, and the collection it belongs to.
+	// where it streams, what it is like, and the collection it belongs to.
 	const renderSeerrTab = () => (
 		<div className={css.sectionStack}>
 			{seerr.pieces.chips && <SeerrChips details={seerr.details} mediaType={seerr.mediaType} seerrNav={seerrNav} />}
 			{seerr.pieces.collection && <SeerrCollectionBanner collection={seerr.details.collection} onOpen={seerrNav?.onOpenCollection} />}
 			{seerr.pieces.facts && <SeerrFacts details={seerr.details} mediaType={seerr.mediaType} />}
+			{seerr.pieces.streaming && <SeerrStreaming providers={seerr.streamingProviders} />}
 			{seerr.pieces.recommendations && (
 				<div onFocus={handleSectionFocus}>
 					<h3 className={css.sectionHeading}>{$L('Recommendations')}</h3>

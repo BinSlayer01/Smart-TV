@@ -148,6 +148,7 @@ const SpotlightDetailContent = (props) => {
 			similar: seerr.similarCards || [],
 			chipCount: seerr.pieces.chips ? seerrChipCount(seerr.details) : 0,
 			factCount: seerr.pieces.facts ? buildMediaFacts(seerr.details, seerr.mediaType).length : 0,
+			streamingCount: seerr.pieces.streaming ? seerr.streamingProviders.length : 0,
 			collection: seerr.collection,
 			seasonMarkers: settings.showSeerrAvailabilityBadges !== false ? seerr.seasonMarkers : null
 		},
@@ -158,7 +159,7 @@ const SpotlightDetailContent = (props) => {
 		albumTracks, artistAlbums, playlistItems, personMovies, personSeries, otherCredits,
 		seerrCredits, studioCards, canManagePlaylist, cardFallbackImageUrl,
 		seerr.recommendationCards, seerr.similarCards, seerr.details, seerr.mediaType, seerr.collection, seerr.seasonMarkers,
-		seerr.pieces.chips, seerr.pieces.facts
+		seerr.pieces.chips, seerr.pieces.facts, seerr.pieces.streaming, seerr.streamingProviders
 	]);
 
 	const cardActions = useMemo(() => ({
@@ -419,7 +420,7 @@ const SpotlightDetailContent = (props) => {
 				card={openCard}
 				serverUrl={effectiveServerUrl}
 				actions={cardActions}
-				seerr={{details: seerr.details, mediaType: seerr.mediaType, collection: seerr.collection, nav: seerrNav}}
+				seerr={{details: seerr.details, mediaType: seerr.mediaType, collection: seerr.collection, streaming: seerr.streamingProviders, nav: seerrNav}}
 				// Paging appends to the playlist list, which is the one that arrives a page at a
 				// time. The Movies and Shows grid is fetched whole, so it has nothing to ask for.
 				onNearEnd={openCardId === 'playlist_order' ? cardActions.loadMoreCollectionItems : null}

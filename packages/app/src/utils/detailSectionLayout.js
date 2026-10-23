@@ -43,6 +43,7 @@ export const DETAIL_SECTIONS = [
 	{id: 'mediaInfo', label: 'Media info', subtitle: 'File, streams and Direct Play check', group: 'sections', styles: [MODERN, SPOTLIGHT, NOUVEAU]},
 	{id: 'seerrGenresTags', label: 'Genres & tags', group: 'seerr', styles: [CLASSIC, MODERN, SPOTLIGHT, NOUVEAU]},
 	{id: 'seerrStats', label: 'Stats', group: 'seerr', styles: [CLASSIC, MODERN, SPOTLIGHT, NOUVEAU]},
+	{id: 'seerrStreaming', label: 'Streaming services', group: 'seerr', styles: [CLASSIC, MODERN, SPOTLIGHT, NOUVEAU]},
 	{id: 'seerrRecommendations', label: 'Recommendations', group: 'seerr', styles: [CLASSIC, MODERN, SPOTLIGHT, NOUVEAU]},
 	{id: 'seerrSimilar', label: 'Similar titles', group: 'seerr', styles: [CLASSIC, MODERN, SPOTLIGHT, NOUVEAU]},
 	{id: 'seerrCollection', label: 'Collection banner', group: 'seerr', styles: [CLASSIC, MODERN]},

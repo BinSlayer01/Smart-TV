@@ -68,6 +68,11 @@ const seerrSection = (title, items, showCredit = false) =>
 
 const peopleSection = (title, people) => ({kind: 'people', title, count: people.length, people});
 
+// The modal opens on its first section and the streaming row can't take focus, so it never leads.
+const streamingNotFirst = (sections) => (sections[0]?.kind === 'seerrStreaming' && sections.length > 1
+	? [sections[1], sections[0], ...sections.slice(2)]
+	: sections);
+
 // A cast list can name the same person twice, once as an actor and once as a guest star, so
 // the repeats are folded into one entry carrying both roles.
 export const dedupePeople = (people = []) => {
@@ -226,6 +231,7 @@ class CardBuilder {
 		const {seerr, fallbackImageUrl} = this.s;
 		const chipCount = seerr?.chipCount || 0;
 		const factCount = seerr?.factCount || 0;
+		const streamingCount = seerr?.streamingCount || 0;
 		const collection = seerr?.collection;
 		if (!chipCount && !factCount && !collection) return null;
 
@@ -238,13 +244,14 @@ class CardBuilder {
 			].filter(Boolean).join(' · '),
 			imageUrl: fallbackImageUrl,
 			icon: CARD_ICONS.seerrDetails,
-			sections: [
+			sections: streamingNotFirst([
 				// The modal hands its opening focus to the first section and only the chips can
 				// take it, so they lead.
 				...(chipCount > 0 ? [{kind: 'seerrChips', title: $L('Genres and Tags'), count: chipCount}] : []),
 				...(factCount > 0 ? [{kind: 'seerrFacts'}] : []),
+				...(streamingCount > 0 ? [{kind: 'seerrStreaming'}] : []),
 				...(collection ? [{kind: 'seerrCollection'}] : [])
-			]
+			])
 		};
 	}
 
@@ -271,15 +278,16 @@ class CardBuilder {
 				? spotlightLandscapeImageUrl(serverUrl, similar[0], {fallbackUrl: fallbackImageUrl})
 				: firstLandscapeImageUrl(serverUrl, recommendations.length ? recommendations : seerrSimilar)) || fallbackImageUrl,
 			icon: CARD_ICONS.similar,
-			sections: [
+			sections: streamingNotFirst([
 				// What Seerr knows about the title itself, ahead of the lists. A Seerr only title
 				// keeps these on its own Details card, so repeating them would show them twice.
 				...(!seerrOnly && seerr?.chipCount > 0 ? [{kind: 'seerrChips'}] : []),
 				...(!seerrOnly && seerr?.factCount > 0 ? [{kind: 'seerrFacts'}] : []),
+				...(!seerrOnly && seerr?.streamingCount > 0 ? [{kind: 'seerrStreaming'}] : []),
 				...(similar.length ? [mediaSection(librarySectionTitle, similar)] : []),
 				...(recommendations.length ? [seerrSection($L('Recommendations (Seerr)'), recommendations)] : []),
 				...(seerrSimilar.length ? [seerrSection(similar.length ? $L('Similar (Seerr)') : $L('Similar'), seerrSimilar)] : [])
-			]
+			])
 		};
 	}
 

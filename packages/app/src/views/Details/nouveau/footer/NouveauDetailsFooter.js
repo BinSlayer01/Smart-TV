@@ -2,7 +2,7 @@ import {useCallback} from 'react';
 import $L from '@enact/i18n/$L';
 
 import {SpottableDiv} from '../../detailsSpottables';
-import {SeerrChips, SeerrFacts} from '../../../../components/seerr/SeerrSections';
+import {SeerrChips, SeerrFacts, SeerrStreaming} from '../../../../components/seerr/SeerrSections';
 import NouveauDirectPlay from './NouveauDirectPlay';
 import {fileName, fileSizeLine, trackRows, videoLines} from '../nouveauFooterFields';
 
@@ -54,13 +54,14 @@ const NouveauDetailsFooter = ({
 	const videoDetails = videoLines(video);
 	const showsChips = Boolean(seerr?.pieces?.chips);
 	const showsFacts = Boolean(seerr?.pieces?.facts);
+	const showsStreaming = Boolean(seerr?.pieces?.streaming);
 
 	const openStudio = useCallback((ev) => {
 		const studio = ev.currentTarget.dataset.studioName;
 		if (studio) onSelectStudio?.(studio);
 	}, [onSelectStudio]);
 
-	if (!studios.length && !showsChips && !showsFacts && !fileSource) return null;
+	if (!studios.length && !showsChips && !showsFacts && !showsStreaming && !fileSource) return null;
 
 	return (
 		<div className={css.footer}>
@@ -82,10 +83,11 @@ const NouveauDetailsFooter = ({
 						</div>
 					</Group>
 				)}
-				{/* Both carry their own label, so neither is wrapped in a titled group. A library
-				    item can have this as readily as a Seerr only one. */}
+				{/* These carry their own label, so none is wrapped in a titled group. A library
+				    item can have them as readily as a Seerr only one. */}
 				{showsChips && <SeerrChips details={seerr.details} mediaType={seerr.mediaType} seerrNav={seerrNav} />}
 				{showsFacts && <SeerrFacts details={seerr.details} mediaType={seerr.mediaType} />}
+				{showsStreaming && <SeerrStreaming providers={seerr.streamingProviders} />}
 				{fileSource && (
 					<Group title={$L('File Information')}>
 						{name && <div className={css.fileName}>{name}</div>}

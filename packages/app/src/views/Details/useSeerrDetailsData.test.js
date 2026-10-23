@@ -124,6 +124,18 @@ describe('the open Seerr details page', () => {
 		expect(refreshes()).toBe(0);
 	});
 
+	test('picks the streaming region the way Seerr does', async () => {
+		seerrApi.getPublicSettings.mockResolvedValue({streamingRegion: 'GB'});
+		expect((await open()).result.current.streamingRegion).toBe('GB');
+
+		seerrApi.getUser.mockResolvedValue({id: 1, settings: {streamingRegion: 'CA'}});
+		expect((await open()).result.current.streamingRegion).toBe('CA');
+
+		seerrApi.getUser.mockRejectedValue(new Error('offline'));
+		seerrApi.getPublicSettings.mockResolvedValue({streamingRegion: ''});
+		expect((await open()).result.current.streamingRegion).toBe('US');
+	});
+
 	test('a refresh that lands after the page closes starts nothing', async () => {
 		mediaInfo = {status: MEDIA_STATUS.PROCESSING};
 		const {unmount} = await open();

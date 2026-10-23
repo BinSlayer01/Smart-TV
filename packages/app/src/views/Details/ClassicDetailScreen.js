@@ -9,7 +9,7 @@ import {castPhotoUrl, hidesMediaDescription, seriesThumbUrl} from './detailsMedi
 import {isMdblistEnabled} from '../../services/mdblistApi';
 import {formatTime} from '../Player/PlayerConstants';
 import {SeerrStatusBadge, SeerrDownloadBars, SeerrSeasonDot} from '../../components/seerr/SeerrStatusBadge';
-import {SeerrChips, SeerrFacts, SeerrCollectionBanner} from '../../components/seerr/SeerrSections';
+import {SeerrChips, SeerrFacts, SeerrStreaming, SeerrCollectionBanner} from '../../components/seerr/SeerrSections';
 import {SpottableDiv, RowContainer} from './detailsSpottables';
 import ExpandableOverview from './ExpandableOverview';
 import {handleSectionKeyDown, handleScrollerFocus} from './detailsFocus';
@@ -535,9 +535,11 @@ const ClassicDetailScreen = ({
 				</RowContainer>
 			)}
 
-			{seerr.pieces.facts && (
-				<RowContainer className={css.section}>
-					<SeerrFacts details={seerr.details} mediaType={seerr.mediaType} />
+			{/* Streaming can't take focus, so it shares the facts row and comes into view with the facts card. */}
+			{(seerr.pieces.facts || seerr.pieces.streaming) && (
+				<RowContainer className={`${css.section} ${css.seerrFactsRow}`}>
+					{seerr.pieces.facts && <SeerrFacts details={seerr.details} mediaType={seerr.mediaType} />}
+					{seerr.pieces.streaming && <SeerrStreaming providers={seerr.streamingProviders} />}
 				</RowContainer>
 			)}
 
