@@ -16,6 +16,7 @@ export {
 	waitForDecoderRelease,
 	setupVisibilityHandler
 } from '@moonfin/platform-webos/video';
+export {readTrailerManifest} from './youtubeManifest';
 
 export const getSharedVideoElement = () => {
 	const video = sharedVideoElement();
