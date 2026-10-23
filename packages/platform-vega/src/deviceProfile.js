@@ -103,7 +103,7 @@ const buildDirectPlayProfiles = (caps) => {
 	const profiles = [
 		{Container: 'webm', Type: 'Video', VideoCodec: webmVideoCodecs, AudioCodec: 'vorbis,opus'},
 		{Container: 'mp4,m4v', Type: 'Video', VideoCodec: videoCodecs, AudioCodec: audioCodecs},
-		{Container: 'mkv', Type: 'Video', VideoCodec: videoCodecs + (caps.vp9 ? ',vp9' : ''), AudioCodec: audioCodecs + ',vorbis'},
+		{Container: 'mkv', Type: 'Video', VideoCodec: videoCodecs + (caps.vp9 ? ',vp9' : ''), AudioCodec: audioCodecs + ',vorbis,pcm_s16le,pcm_s24le'},
 		{Container: 'mov', Type: 'Video', VideoCodec: videoCodecs, AudioCodec: audioCodecs},
 		{Container: 'mp3', Type: 'Audio'},
 		{Container: 'flac', Type: 'Audio'},
@@ -146,10 +146,11 @@ export const getJellyfinDeviceProfile = async () => {
 	const videoRangeTypes = buildVideoRangeTypes(caps);
 	const hlsAudioCodecs = ['aac', 'mp2'].concat(caps.ac3 ? ['ac3'] : [], caps.eac3 ? ['eac3'] : []).join(',');
 
-	// Transcodes go out as fMP4 segments, which carry HEVC as well as H.264 through the
-	// WebView's HLS player where a TS segment only gets H.264 through. The server takes the
-	// first codec it is allowed to encode, so a server with HEVC encoding on sends HEVC and
-	// any other sends H.264, and an HEVC source that only needs its audio converted is copied.
+	// Transcodes go out as fMP4 segments, which carry HEVC as well as H.264 where a TS
+	// segment only gets H.264 through. The server takes the first codec it is allowed to
+	// encode, so a server with HEVC encoding on sends HEVC and any other sends H.264, and an
+	// HEVC source that only needs its audio converted is copied. Segments are 2 seconds, since
+	// the WebView cant take in a 6 second one from a high bitrate remux.
 	const hlsVideoCodecs = caps.hevc ? 'hevc,h264' : 'h264';
 	// Jellyfin only takes a TS profile for a live channel and answers with a bare stream the
 	// WebView cant open when there is none, so live TV gets this one. It sits after fMP4 so
@@ -157,7 +158,7 @@ export const getJellyfinDeviceProfile = async () => {
 	const liveProfile = {Container: 'ts', Type: 'Video', AudioCodec: 'aac', VideoCodec: 'h264', Context: 'Streaming', Protocol: 'hls', MaxAudioChannels: caps.nativeHls ? '6' : '2', MinSegments: '1', BreakOnNonKeyFrames: false};
 	const transcodingProfiles = [
 		...(caps.nativeHls
-			? [{Container: 'mp4', Type: 'Video', AudioCodec: hlsAudioCodecs, VideoCodec: hlsVideoCodecs, Context: 'Streaming', Protocol: 'hls', MaxAudioChannels: '6', MinSegments: '1', BreakOnNonKeyFrames: false}, liveProfile]
+			? [{Container: 'mp4', Type: 'Video', AudioCodec: hlsAudioCodecs, VideoCodec: hlsVideoCodecs, Context: 'Streaming', Protocol: 'hls', MaxAudioChannels: '6', MinSegments: '1', SegmentLength: 2, BreakOnNonKeyFrames: false}, liveProfile]
 			: [liveProfile]),
 		{Container: 'mp4', Type: 'Video', AudioCodec: 'aac', VideoCodec: 'h264', Context: 'Static'},
 		...AUDIO_TRANSCODING_PROFILES

@@ -8,6 +8,7 @@ import {getImageUrl, getLogoUrl} from '../../utils/helpers';
 import {transcodesAudioCodec} from '../../utils/deviceProfileTuning';
 import {api as jellyfinApi, createApiForServer, getServerUrl} from '../../services/jellyfinApi';
 import {getApiForItem} from '../../services/connectionPool';
+import {isVega} from '../../platform';
 import AudioMode from './audio/AudioMode';
 import useAudioTransport from './audio/useAudioTransport';
 import useLyrics from './audio/useLyrics';
@@ -1496,8 +1497,10 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				console.log('[Player] Appending media fragment #t=' + resumeSec + ' for resume (' + resumeTicks + ' ticks)');
 			}
 
-			// forceHlsJsRef overrides native when HEVC decoding already failed
-			const nativeHlsOk = !forceHlsJsRef.current
+			// forceHlsJsRef overrides native when HEVC decoding already failed. The Fire TV
+			// WebView's own HLS player holds on to what it has played, so a high bitrate
+			// remux runs the device out of memory.
+			const nativeHlsOk = !forceHlsJsRef.current && !(isVega() && !isLiveTV)
 				&& !!(video.canPlayType('application/x-mpegURL').replace(/no/, ''));
 			const useHlsJs = isHls && !nativeHlsOk && Hls.isSupported();
 			console.log('[Player] Source type:', { isHls, mimeType, autoplay: video.autoplay, platformVersion: platformVersionRef.current, nativeHlsOk, useHlsJs, forceHlsJs: forceHlsJsRef.current });
@@ -1511,8 +1514,9 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				const hls = new Hls({
 					enableWorker: false,
 					lowLatencyMode: false,
-					maxBufferLength: 30,
+					maxBufferLength: isVega() ? 10 : 30,
 					maxMaxBufferLength: 60,
+					backBufferLength: isVega() ? 10 : Infinity,
 					startFragPrefetch: true,
 					maxBufferHole: 0.5,
 					nudgeMaxRetry: 5,
