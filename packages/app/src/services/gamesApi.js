@@ -180,9 +180,9 @@ export const getEmulatorDataPath = () => {
 
 // Null when there's no save (404). Any other failure throws, so a failed read is never
 // mistaken for a missing save.
-export const getStateBytes = async (saveId) => {
+const getSaveBytes = async (saveId, kind) => {
 	const res = await fetchWithTimeout(
-		`${base()}/Moonfin/Games/Saves/${enc(saveId)}?kind=state`,
+		`${base()}/Moonfin/Games/Saves/${enc(saveId)}?kind=${kind}`,
 		{headers: authHeaders()},
 		30000
 	);
@@ -196,8 +196,8 @@ export const getStateBytes = async (saveId) => {
 	return buf && buf.byteLength ? new Uint8Array(buf) : null;
 };
 
-export const putStateBytes = async (saveId, bytes) => {
-	const res = await fetchWithTimeout(`${base()}/Moonfin/Games/Saves/${enc(saveId)}?kind=state`, {
+const putSaveBytes = async (saveId, kind, bytes) => {
+	const res = await fetchWithTimeout(`${base()}/Moonfin/Games/Saves/${enc(saveId)}?kind=${kind}`, {
 		method: 'PUT',
 		headers: {...authHeaders(), 'Content-Type': 'application/octet-stream'},
 		body: bytes
@@ -208,6 +208,25 @@ export const putStateBytes = async (saveId, bytes) => {
 		throw err;
 	}
 };
+
+export const getStateBytes = (saveId) => getSaveBytes(saveId, 'state');
+export const putStateBytes = (saveId, bytes) => putSaveBytes(saveId, 'state', bytes);
+
+// Every core and backend shares one battery save per game, so it's keyed by the bare game id.
+export const getSram = (gameId) => getSaveBytes(gameId, 'sram');
+export const putSram = (gameId, bytes) => putSaveBytes(gameId, 'sram', bytes);
+
+// A server without RomM support answers 404, which is the same as having no RomM library.
+export const getRommAccount = async () => {
+	try {
+		return await jsonRequest('Romm/Account');
+	} catch (e) {
+		if (e.status === 404) return {available: false, linked: false};
+		throw e;
+	}
+};
+export const startRommLink = () => jsonRequest('Romm/Account', {method: 'POST'});
+export const unlinkRomm = () => jsonRequest('Romm/Account', {method: 'DELETE'});
 
 // Settings blob (the EmulatorJS `ejs-settings` JSON, text) synced per user via the proxy.
 export const getSettingsBlob = async () => {

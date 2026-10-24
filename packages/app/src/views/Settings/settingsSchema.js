@@ -1025,6 +1025,15 @@ export const SETTINGS_SCHEMA = [
 				opensView: 'achievements',
 				when: (ctx) => ctx.achievements.available,
 				rows: []
+			},
+			{
+				id: 'romm',
+				clean: true,
+				icon: 'sports_esports',
+				label: () => 'RomM',
+				description: () => $L('Play and save games with your RomM account'),
+				when: (ctx) => !!ctx.romm?.available,
+				rows: [{kind: KIND.CUSTOM, render: 'rommPanel'}]
 			}
 		]
 	},
