@@ -16,6 +16,13 @@ export const gameDisplayTitle = (title, fileName) => {
 	return cleaned || thumbName(fileName);
 };
 
+// The title without trailing No-Intro tags such as "(USA)" or "(Rev 1)", for the details screen,
+// which shows the region on its own. Lists keep the tags so two releases stay apart.
+export const gameHeadline = (title, fileName) => {
+	const display = gameDisplayTitle(title, fileName);
+	return display.replace(/(\s*[([][^()[\]]*[)\]])+$/, '').trim() || display;
+};
+
 // A cover the server has no art for leaves the seeded colour behind it showing.
 export const hideBrokenArt = (ev) => { ev.target.style.visibility = 'hidden'; };
 
