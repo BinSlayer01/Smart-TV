@@ -441,6 +441,15 @@ const collectionItemsVia = (send, method) => async (collectionId, itemIds) => {
 	return send(path, {method, body: {Ids: itemIds}});
 };
 
+// Jellyfin makes a new playlist public unless told otherwise, and Emby fails on
+// Ids sent as an array, so it gets them as a comma list.
+const createPlaylistVia = (send, type, userId) => (name, itemIds = []) => send('/Playlists', {
+	method: 'POST',
+	body: type() === 'emby'
+		? {Name: name, Ids: itemIds.join(','), UserId: userId()}
+		: {Name: name, Ids: itemIds, UserId: userId(), IsPublic: false}
+});
+
 // The casing the remote search endpoint wants in its path.
 const REMOTE_SEARCH_TYPES = {
 	movie: 'Movie',
@@ -959,15 +968,7 @@ export const api = {
 	getPlaylists: (sortBy = 'SortName', sortOrder = 'Ascending') =>
 		request(`${userRoutes.items()}IncludeItemTypes=Playlist&Recursive=true&SortBy=${sortBy}&SortOrder=${sortOrder}`),
 
-	createPlaylist: (name, itemIds = []) =>
-		request('/Playlists', {
-			method: 'POST',
-			body: {
-				Name: name,
-				Ids: itemIds,
-				UserId: currentUser
-			}
-		}),
+	createPlaylist: createPlaylistVia(request, () => serverType, () => currentUser),
 
 	addToPlaylist: (playlistId, itemIds) =>
 		request(`/Playlists/${playlistId}/Items?Ids=${itemIds.join(',')}`, {
@@ -1318,15 +1319,7 @@ export const createApiForServer = (serverUrl, token, userId, serverTypeOverride 
 		getPlaylists: (sortBy = 'SortName', sortOrder = 'Ascending') =>
 			serverRequest(`${serverUserRoutes.items()}IncludeItemTypes=Playlist&Recursive=true&SortBy=${sortBy}&SortOrder=${sortOrder}`),
 
-		createPlaylist: (name, itemIds = []) =>
-			serverRequest('/Playlists', {
-				method: 'POST',
-				body: {
-					Name: name,
-					Ids: itemIds,
-					UserId: userId
-				}
-			}),
+		createPlaylist: createPlaylistVia(serverRequest, () => serverTypeOverride, () => userId),
 
 		addToPlaylist: (playlistId, itemIds) =>
 			serverRequest(`/Playlists/${playlistId}/Items?Ids=${itemIds.join(',')}`, {
