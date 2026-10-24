@@ -467,7 +467,7 @@ export const getTrickplayModeOptions = () => [
 
 export const getZoomModeOptions = () => [
 	{ value: 'fit', label: $L('Fit') },
-	{ value: 'autoCrop', label: $L('Auto Crop') },
+	{ value: 'autoCrop', label: $L('Zoom to Fill') },
 	{ value: 'stretch', label: $L('Stretch') }
 ];
 

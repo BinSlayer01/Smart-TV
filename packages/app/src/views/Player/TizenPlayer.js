@@ -31,6 +31,7 @@ import useCinemaSkip from './useCinemaSkip';
 import {isHdrOutput, findVideoStream} from '../../utils/videoRange';
 import {selectPreferredAudioStream} from '../../utils/audioTrackSelection';
 import {applyResumeRewind, skipBackSeconds, skipForwardSeconds, zoomInternalFromSetting, zoomSettingFromInternal} from '../../utils/playbackTuning';
+import {getZoomModeOptions} from '../Settings/settingsOptions';
 import {saveAudioPref, saveSubtitlePref} from '../../services/subtitlePrefs';
 import {resolveSeriesAudio} from './initialAudio';
 import {resolveInitialSubtitle} from './initialSubtitle';
@@ -364,11 +365,10 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		}
 	}, []);
 
-	const zoomModeLabel = useMemo(() => {
-		if (zoomMode === 'fill') return $L('Crop');
-		if (zoomMode === 'stretch') return $L('Stretch');
-		return $L('Fit');
-	}, [zoomMode]);
+	const zoomModeLabel = useMemo(
+		() => getZoomModeOptions().find((option) => option.value === zoomSettingFromInternal(zoomMode))?.label,
+		[zoomMode]
+	);
 
 	const subtitleStyleSettings = useMemo(
 		() => resolveSubtitleStyleSettings(settings, isHdrContent),
