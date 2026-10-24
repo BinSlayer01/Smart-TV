@@ -7,6 +7,7 @@ import RatingsRow from '../../components/RatingsRow';
 import {KEYS} from '../../utils/keys';
 import css from './Browse.module.less';
 import {carouselIntervalMs} from '../../utils/carouselTiming';
+import {useScreensaverActive} from '../../hooks/useScreensaverActive';
 
 const PRELOAD_ADJACENT_SLIDES = 2;
 const MAX_DOTS = 7;
@@ -35,6 +36,7 @@ const BannerBar = memo(({
 }) => {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [featuredFocused, setFeaturedFocused] = useState(false);
+	const screensaverActive = useScreensaverActive();
 
 	const preloadedImagesRef = useRef(new Set());
 	const carouselIntervalRef = useRef(null);
@@ -82,12 +84,12 @@ const BannerBar = memo(({
 			settings.autoAdvanceInterval,
 			settings.carouselSpeed
 		);
-		if (!isVisible || featuredItems.length <= 1 || !featuredFocused || carouselSpeed <= 0) return;
+		if (!isVisible || screensaverActive || featuredItems.length <= 1 || !featuredFocused || carouselSpeed <= 0) return;
 
 		carouselIntervalRef.current = setInterval(() => {
 			setCurrentIndex((prev) => (prev + 1) % featuredItems.length);
 		}, carouselSpeed);
-	}, [isVisible, featuredItems.length, featuredFocused, settings.autoAdvance, settings.autoAdvanceInterval, settings.carouselSpeed]);
+	}, [isVisible, screensaverActive, featuredItems.length, featuredFocused, settings.autoAdvance, settings.autoAdvanceInterval, settings.carouselSpeed]);
 
 	useEffect(() => {
 		startCarouselTimer();
