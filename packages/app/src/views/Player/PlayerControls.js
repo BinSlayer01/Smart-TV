@@ -7,6 +7,7 @@ import TrickplayPreview from '../../components/TrickplayPreview';
 import {isTrickplayOn} from '../../utils/trickplayLayout';
 import SubtitleOffsetOverlay from './SubtitleOffsetOverlay';
 import SubtitleSettingsOverlay from './SubtitleSettingsOverlay';
+import SecondarySubtitleSettingsOverlay from './SecondarySubtitleSettingsOverlay';
 import {getPlatform} from '../../platform';
 import {ModalContainer} from '../../utils/spotlightContainers';
 import {numberedTrackName, sortSubtitleStreams, subtitleTrackDetail, audioTrackDetail} from '../../utils/trackLabels';
@@ -202,6 +203,15 @@ const PlayerControls = ({
 	castMembers,
 	isLoadingCastMembers,
 	handleSubtitleOffsetChange,
+	secondarySubtitleIndex,
+	secondarySubtitleStreams,
+	secondarySubtitleOffset,
+	secondarySubtitleTrackEvents,
+	handleChooseSubtitleSlot,
+	handleSelectSecondarySubtitle,
+	handleOpenSecondarySubtitleOffset,
+	handleOpenSecondarySubtitleSettings,
+	handleSecondarySubtitleOffsetChange,
 	closeModal,
 	stopPropagation,
 	transcodeForced,
@@ -256,6 +266,12 @@ const PlayerControls = ({
 	// nothing to report instead.
 	const remoteSubtitleBusy = isSearchingRemoteSubtitles || isDownloadingRemoteSubtitle;
 	const showRemoteSubtitleResults = !remoteSubtitleBusy && !remoteSubtitleError;
+
+	const subtitleSlotLabel = (index) => {
+		const stream = subtitleStreams.find((s) => s.index === index);
+		if (!stream) return $L('None');
+		return stream.displayTitle || stream.language || $L('Subtitle');
+	};
 
 	// Every button carries its own tooltip and the stylesheet reveals the focused one,
 	// so moving along the row doesn't re-render anything.
@@ -531,6 +547,61 @@ const PlayerControls = ({
 				</div>
 			)}
 
+			{activeModal === 'subtitleSlot' && (
+				<div className={css.trackModal} onClick={closeModal}>
+					<ModalContainer className={css.modalContent} onClick={stopPropagation} data-modal="subtitleSlot" spotlightId="subtitleSlot-modal">
+						<h2 className={css.modalTitle}>{$L('Subtitles')}</h2>
+						<div className={css.trackList}>
+							<TrackOptionRow
+								label={$L('Primary')}
+								detail={subtitleSlotLabel(selectedSubtitleIndex)}
+								data-slot="primary"
+								onClick={handleChooseSubtitleSlot}
+							/>
+							<TrackOptionRow
+								label={$L('Secondary')}
+								detail={subtitleSlotLabel(secondarySubtitleIndex)}
+								data-slot="secondary"
+								onClick={handleChooseSubtitleSlot}
+							/>
+							<TrackDivider />
+							<TrackOptionRow label={$L('Cancel')} dimmed onClick={closeModal} />
+						</div>
+					</ModalContainer>
+				</div>
+			)}
+
+			{activeModal === 'secondarySubtitle' && (
+				<div className={css.trackModal} onClick={closeModal}>
+					<ModalContainer className={css.modalContent} onClick={stopPropagation} data-modal="secondarySubtitle" spotlightId="secondarySubtitle-modal">
+						<h2 className={css.modalTitle}>{$L('Secondary Subtitle Track')}</h2>
+						<div className={css.trackList}>
+							<TrackOptionRow
+								label={$L('None')}
+								selected={secondarySubtitleIndex == null}
+								data-index={-1}
+								onClick={handleSelectSecondarySubtitle}
+							/>
+							{secondarySubtitleStreams.map((stream, i) => (
+								<TrackOptionRow
+									key={stream.index}
+									label={numberedTrackName(i + 1, stream.displayTitle, $L('Subtitle'))}
+									detail={subtitleTrackDetail({name: stream.displayTitle, codec: stream.codec, language: stream.language, isExternal: stream.isExternal, deliveryMethod: stream.deliveryMethod, isForced: stream.isForced, isHearingImpaired: stream.isHearingImpaired})}
+									selected={stream.index === secondarySubtitleIndex}
+									data-index={stream.index}
+									onClick={handleSelectSecondarySubtitle}
+								/>
+							))}
+							<TrackDivider />
+							<TrackOptionRow label={$L('Offset')} spotlightId="btn-secondary-subtitle-offset" onClick={handleOpenSecondarySubtitleOffset} />
+							<TrackOptionRow label={$L('Appearance')} spotlightId="btn-secondary-subtitle-appearance" onClick={handleOpenSecondarySubtitleSettings} />
+							<TrackDivider />
+							<TrackOptionRow label={$L('Cancel')} dimmed onClick={closeModal} />
+						</div>
+					</ModalContainer>
+				</div>
+			)}
+
 			{activeModal === 'subtitleDownload' && (
 				<div className={css.trackModal} onClick={closeModal}>
 					<ModalContainer className={css.modalContent} onClick={stopPropagation} data-modal="subtitleDownload" spotlightId="subtitleDownload-modal">
@@ -750,6 +821,24 @@ const PlayerControls = ({
 					subtitleTrackEvents={subtitleTrackEvents}
 					onClose={closeModal}
 					onOffsetChange={handleSubtitleOffsetChange}
+				/>
+			)}
+
+			{activeModal === 'secondarySubtitleOffset' && (
+				<SubtitleOffsetOverlay
+					visible
+					currentOffset={secondarySubtitleOffset}
+					currentTime={currentTime}
+					subtitleTrackEvents={secondarySubtitleTrackEvents}
+					onClose={closeModal}
+					onOffsetChange={handleSecondarySubtitleOffsetChange}
+				/>
+			)}
+
+			{activeModal === 'secondarySubtitleSettings' && (
+				<SecondarySubtitleSettingsOverlay
+					onClose={closeModal}
+					isHdr={isHdrContent}
 				/>
 			)}
 

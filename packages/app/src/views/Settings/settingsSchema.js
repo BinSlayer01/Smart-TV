@@ -855,6 +855,7 @@ export const SETTINGS_SCHEMA = [
 					},
 					{kind: KIND.SECTION, id: 'subtitleStream', label: () => $L('Subtitle Stream'), when: whenSubtitlesOn},
 					{kind: KIND.OPTION, key: 'subtitleLanguage', label: () => $L('Default Subtitle Language'), options: getSubtitleLanguageOptions, fallback: () => $L('None'), icon: 'language', when: whenSubtitlesOn, padded: true},
+					{kind: KIND.OPTION, key: 'preferredSecondarySubtitleLanguage', label: () => $L('Preferred Secondary Subtitle Language'), options: getSubtitleLanguageOptions, fallback: () => $L('None'), icon: 'language', when: whenSubtitlesOn, padded: true},
 					{kind: KIND.OPTION, key: 'fallbackSubtitleLanguage', label: () => $L('Fallback Subtitle Language'), options: getSubtitleLanguageOptions, fallback: () => $L('None'), icon: 'language', when: whenSubtitlesOn, padded: true},
 					{kind: KIND.TOGGLE, key: 'preferSdhSubtitles', label: () => $L('Prefer SDH Subtitles'), desc: () => $L('Prioritize SDH/CC subtitle tracks when auto-selecting.'), icon: 'hearing', when: whenSubtitlesOn},
 					{kind: KIND.TOGGLE, key: 'preferTextSubtitles', label: () => $L('Prefer text subtitles'), desc: () => $L('Prioritize text-based subtitles (SRT, VTT) over image-based formats (PGS, VobSub)'), icon: 'subtitles', when: whenSubtitlesOn},

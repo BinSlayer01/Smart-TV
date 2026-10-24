@@ -44,6 +44,12 @@ export const defaultSettings = {
 	preferSdhSubtitles: false,
 	preferTextSubtitles: false,
 	preferExternalSubtitles: false,
+	// The second subtitle track's settings stay on this device. A size of 0 and an empty
+	// color follow the first track.
+	preferredSecondarySubtitleLanguage: '',
+	secondarySubtitleSize: 0,
+	secondarySubtitleOffset: 8,
+	secondarySubtitleColor: '',
 	// Seconds as a string, the shape the other clients sync for it.
 	resumeSubtractDuration: '0',
 	skipBackLength: 10000,

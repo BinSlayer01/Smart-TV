@@ -39,7 +39,9 @@ import {KEYS, isBackKey, isMediaKey} from '../../utils/keys';
 import {useSettings} from '../../context/SettingsContext';
 import {useSyncPlay} from '../../context/SyncPlayContext';
 import * as syncPlayService from '../../services/syncPlay';
-import {getSubtitleOverlayStyle, getSubtitleTextStyle, sanitizeSubtitleHtml, resolveSubtitleStyleSettings} from '../../utils/subtitleConstants';
+import {resolveSubtitleStyleSettings} from '../../utils/subtitleConstants';
+import SubtitleTextOverlay from './SubtitleTextOverlay';
+import useSecondarySubtitle from './useSecondarySubtitle';
 import {isHdrOutput, findVideoStream} from '../../utils/videoRange';
 import {selectPreferredAudioStream} from '../../utils/audioTrackSelection';
 import {applyResumeRewind, skipBackSeconds, skipForwardSeconds, zoomInternalFromSetting, zoomSettingFromInternal} from '../../utils/playbackTuning';
@@ -431,6 +433,18 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		onExpire: () => handleBackRef.current?.(),
 		ticking: activeModal === 'sleep'
 	});
+
+	const secondary = useSecondarySubtitle({
+		subtitleStreams,
+		primaryIndex: selectedSubtitleIndex,
+		preferExternal: settings.preferExternalSubtitles === true,
+		preferredLanguage: settings.preferredSecondarySubtitleLanguage,
+		available: !isLiveTV && !isAudioMode
+	});
+	const {
+		prepareForItem: prepareSecondaryForItem, restore: restoreSecondary, update: updateSecondary,
+		select: selectSecondary, releaseIfPrimary: releaseSecondaryIfPrimary, offered: offersSecondarySubtitles
+	} = secondary;
 
 	const {topButtons, bottomButtons} = usePlayerButtons({
 		isPaused, audioStreams, subtitleStreams, chapters,
@@ -876,6 +890,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			setSubtitleTrackEvents(null);
 			setCurrentSubtitleText(null);
 			setSelectedSubtitleIndex(-1);
+			prepareSecondaryForItem(item.Id);
 			setVideoDisplayAspectRatio(null);
 			setDecodedAspectRatio(null);
 			burnInSubtitleRef.current = null;
@@ -1108,6 +1123,9 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					// A burn in track is already part of the video by now, so there is
 					// nothing to fetch and render on top of it.
 					if (!initialSubtitleChoice.isBurnIn) await loadSubtitleData(initialSubtitleChoice);
+				}
+				if (!isLiveTV && !result.isAudio) {
+					restoreSecondary(item, result.subtitleStreams || [], initialSubtitleChoice ? initialSubtitleChoice.index : -1);
 				}
 				// Waiting on the subtitles can outlast this item, and whatever replaced it owns
 				// the player now.
@@ -1871,7 +1889,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			// so the time only moves when it would show, and the first tick after a modal closes catches
 			// up. Lyrics and the offset overlay follow it closely, so they still get every tick.
 			const modal = activeModalRef.current;
-			if (isAudioMode || modal === 'subtitleOffset') {
+			if (isAudioMode || modal === 'subtitleOffset' || modal === 'secondarySubtitleOffset') {
 				setCurrentTime(time);
 			} else if (!modal) {
 				setCurrentTime((shown) => (Math.floor(shown) === Math.floor(time) ? shown : time));
@@ -1916,10 +1934,11 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				}
 				setCurrentSubtitleText(matchingTexts.length > 0 ? matchingTexts.join('\n') : null);
 			}
+			updateSecondary(ticks);
 
 			checkSegments(ticks);
 		}
-	}, [checkSegments, subtitleTrackEvents, subtitleOffset, settleGroupSeek, isAudioMode]);
+	}, [checkSegments, subtitleTrackEvents, subtitleOffset, settleGroupSeek, isAudioMode, updateSecondary]);
 
 	const handleWaiting = useCallback(() => {
 		setIsBuffering(true);
@@ -2362,8 +2381,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		onStop: handleBack
 	});
 
-	const openModal = useCallback((modal) => {
-	  lastFocusedElementRef.current = document.activeElement;
+	const openModal = useCallback((modal, keepReturnFocus = false) => {
+		if (!keepReturnFocus) lastFocusedElementRef.current = document.activeElement;
 		// The controls stay up under a dialog, so closing it gives focus back to the button that opened it.
 		clearTimeout(controlsTimeoutRef.current);
 		setActiveModal(modal);
@@ -2419,6 +2438,25 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 
 	const handleOpenSubtitleSettings = useCallback(() => {
 		openModal('subtitleSettings');
+	}, [openModal]);
+
+	const handleChooseSubtitleSlot = useCallback((e) => {
+		openModal(e.currentTarget.dataset.slot === 'secondary' ? 'secondarySubtitle' : 'subtitle', true);
+	}, [openModal]);
+
+	const handleSelectSecondarySubtitle = useCallback((e) => {
+		const index = parseInt(e.currentTarget.dataset.index, 10);
+		if (isNaN(index)) return;
+		selectSecondary(item, subtitleStreams, index);
+		closeModal();
+	}, [item, subtitleStreams, selectSecondary, closeModal]);
+
+	const handleOpenSecondarySubtitleOffset = useCallback(() => {
+		openModal('secondarySubtitleOffset', true);
+	}, [openModal]);
+
+	const handleOpenSecondarySubtitleSettings = useCallback(() => {
+		openModal('secondarySubtitleSettings', true);
 	}, [openModal]);
 
 	// dvd and dvb bitmaps have no client renderer, the server burns them into
@@ -2505,11 +2543,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		}
 
 		saveSubtitlePref(item, index, streamList || []);
+		releaseSecondaryIfPrimary(item, streamList || [], index);
 
 		if (shouldClose) {
 			closeModal();
 		}
-	}, [item, subtitleStreams, closeModal, settings.enablePgsRendering, initAssRendererForStream, initPgsRendererForStream, loadTextTrack, reloadWithSubtitleIndex]);
+	}, [item, subtitleStreams, closeModal, settings.enablePgsRendering, initAssRendererForStream, initPgsRendererForStream, loadTextTrack, reloadWithSubtitleIndex, releaseSecondaryIfPrimary]);
 
 	const handleOpenRemoteSubtitleSearch = useCallback(async () => {
 		if (!item?.Id) return;
@@ -2850,7 +2889,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			case 'rewind': handleRewind(); break;
 			case 'forward': handleForward(); break;
 			case 'audio': openModal('audio'); break;
-			case 'subtitle': openModal('subtitle'); break;
+			case 'subtitle': openModal(offersSecondarySubtitles ? 'subtitleSlot' : 'subtitle'); break;
 			case 'quality': openModal('quality'); break;
 			case 'chapter': openModal('chapter'); break;
 			case 'episodes': openModal('episodes'); break;
@@ -2871,7 +2910,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			case 'queue': handleSelectAudioPanel(action); break;
 			default: break;
 		}
-	}, [showControls, handlePlayPause, handleRewind, handleForward, openModal, handleOpenCast, handleToggleZoom, handleOpenGuide, openCarousel, handlePlayNextNow, handleNextTrack, handlePrevTrack, handleToggleShuffle, handleToggleRepeat, handleToggleFavorite, handleSelectAudioPanel]);
+	}, [showControls, handlePlayPause, handleRewind, handleForward, openModal, offersSecondarySubtitles, handleOpenCast, handleToggleZoom, handleOpenGuide, openCarousel, handlePlayNextNow, handleNextTrack, handlePrevTrack, handleToggleShuffle, handleToggleRepeat, handleToggleFavorite, handleSelectAudioPanel]);
 
 	const handleControlButtonClick = useCallback((e) => {
 		const action = e.currentTarget.dataset.action;
@@ -3342,18 +3381,14 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			)}
 
 			{/* Custom Subtitle Overlay - webOS doesn't support native <track> elements */}
-			{!isLoading && !error && currentSubtitleText && !isAudioMode && (
-				<div
-					className={css.subtitleOverlay}
-					style={getSubtitleOverlayStyle(subtitleStyleSettings)}
-				>
-					<div
-						className={css.subtitleText}
-						style={getSubtitleTextStyle(subtitleStyleSettings)}
-						// eslint-disable-next-line react/no-danger
-						dangerouslySetInnerHTML={{__html: sanitizeSubtitleHtml(currentSubtitleText)}}
-					/>
-				</div>
+			{!isLoading && !error && !isAudioMode && (
+				<SubtitleTextOverlay
+					css={css}
+					settings={subtitleStyleSettings}
+					primaryText={currentSubtitleText}
+					secondaryText={secondary.text}
+					secondaryLoaded={secondary.loaded}
+				/>
 			)}
 
 
@@ -3464,6 +3499,15 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				castMembers={castMembers}
 				isLoadingCastMembers={isLoadingCastMembers}
 				handleSubtitleOffsetChange={handleSubtitleOffsetChange}
+				secondarySubtitleIndex={secondary.index}
+				secondarySubtitleStreams={secondary.streams}
+				secondarySubtitleOffset={secondary.delay}
+				secondarySubtitleTrackEvents={secondary.events}
+				handleChooseSubtitleSlot={handleChooseSubtitleSlot}
+				handleSelectSecondarySubtitle={handleSelectSecondarySubtitle}
+				handleOpenSecondarySubtitleOffset={handleOpenSecondarySubtitleOffset}
+				handleOpenSecondarySubtitleSettings={handleOpenSecondarySubtitleSettings}
+				handleSecondarySubtitleOffsetChange={secondary.setDelay}
 				closeModal={closeModal}
 				stopPropagation={stopPropagation}
 				transcodeForced={settings.preferTranscode}
