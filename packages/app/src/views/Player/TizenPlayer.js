@@ -27,6 +27,7 @@ import {resolveSubtitleStyleSettings} from '../../utils/subtitleConstants';
 import SubtitleTextOverlay from './SubtitleTextOverlay';
 import useSecondarySubtitle from './useSecondarySubtitle';
 import useSubtitleFetch from './useSubtitleFetch';
+import useCinemaSkip from './useCinemaSkip';
 import {isHdrOutput, findVideoStream} from '../../utils/videoRange';
 import {selectPreferredAudioStream} from '../../utils/audioTrackSelection';
 import {applyResumeRewind, skipBackSeconds, skipForwardSeconds, zoomInternalFromSetting, zoomSettingFromInternal} from '../../utils/playbackTuning';
@@ -492,8 +493,10 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			setAssTime(assRendererRef.current, Math.max(0, assTime));
 		}
 		updateSecondary(ticks);
+		updateCinemaSkip(ticks); // eslint-disable-line no-use-before-define
 
-		checkSegments(ticks); // eslint-disable-line no-use-before-define
+		// A pre-roll with the Skip button runs no segment prompts of its own.
+		if (!cinemaSkipActive) checkSegments(ticks); // eslint-disable-line no-use-before-define
 	};
 
 	const startTimeUpdatePolling = useCallback(() => {
@@ -1799,6 +1802,13 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		onPlayNext(episode, options);
 	}, [onPlayNext, stopTimeUpdatePolling, item.Id]);
 
+	const cinemaSkip = useCinemaSkip({
+		item, videoQueue, duration, controlsVisible, activeModal,
+		enabled: settings.cinemaModeSkipEnabled === true,
+		onSkip: onPlayNextWithCleanup
+	});
+	const {active: cinemaSkipActive, update: updateCinemaSkip} = cinemaSkip;
+
 	const {carouselOpenRef, openCarousel, stepChannel, markChannelPlaying, carouselProps} = useChannelCarousel({
 		item, isLiveTV, liveTvChannels, sortBy: settings.liveTvChannelSortBy,
 		error, controlsVisible, showControls, hideControls, setFocusRow,
@@ -3043,6 +3053,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				return;
 			}
 
+			if (cinemaSkip.handleKeyDown(e)) return;
 			if (handlePopupKeyDown(e)) return;
 
 			// Up during live playback opens the channel carousel, over the OSD or not.
@@ -3322,6 +3333,19 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					progress={skipSegment.progress}
 					countdownStyle={settings.nextUpCountdownStyle ?? 'both'}
 					onSkip={handleSkipSegment}
+					spotlightId="skip-segment-btn"
+					controlsVisible={controlsVisible}
+				/>
+			)}
+
+			{!isLoading && cinemaSkip.shown && !activeModal && (
+				<SkipSegmentOverlay
+					key={item.Id}
+					label={$L('Skip')}
+					remainingSeconds={Math.max(0, Math.round(duration - currentTime))}
+					progress={Math.max(0, (duration - currentTime) / duration)}
+					countdownStyle={settings.nextUpCountdownStyle ?? 'both'}
+					onSkip={cinemaSkip.skip}
 					spotlightId="skip-segment-btn"
 					controlsVisible={controlsVisible}
 				/>

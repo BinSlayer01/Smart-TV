@@ -80,6 +80,7 @@ export const defaultSettings = {
 	// Off by default because every intro costs a full player teardown and reopen before
 	// the film, which is slow on older sets.
 	cinemaModeEnabled: false,
+	cinemaModeSkipEnabled: false,
 	theme: 'dark',
 	visualTheme: 'moonfin',
 	customThemeId: '',

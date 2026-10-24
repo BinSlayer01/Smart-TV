@@ -294,7 +294,7 @@ export const SYNCABLE_KEYS = [
 	'showSyncPlayButton',
 	'syncPlayAdvancedCorrectionEnabled', 'syncPlayEnableSyncCorrection',
 	'syncPlayUseSkipToSync', 'syncPlayMinDelaySkipToSync', 'syncPlayExtraTimeOffset',
-	'videoStartDelay', 'cinemaModeEnabled', 'cinemaModeEpisodesEnabled',
+	'videoStartDelay', 'cinemaModeEnabled', 'cinemaModeEpisodesEnabled', 'cinemaModeSkipEnabled',
 	'audioLanguage', 'fallbackAudioLanguage', 'preferDefaultAudioTrack', 'preferAudioDescription',
 	'subtitleLanguage', 'fallbackSubtitleLanguage', 'preferSdhSubtitles', 'preferTextSubtitles', 'preferExternalSubtitles', 'subtitleMode',
 	'assDirectPlay',

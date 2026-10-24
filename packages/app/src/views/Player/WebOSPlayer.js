@@ -43,6 +43,7 @@ import {resolveSubtitleStyleSettings} from '../../utils/subtitleConstants';
 import SubtitleTextOverlay from './SubtitleTextOverlay';
 import useSecondarySubtitle from './useSecondarySubtitle';
 import useSubtitleFetch from './useSubtitleFetch';
+import useCinemaSkip from './useCinemaSkip';
 import {isHdrOutput, findVideoStream} from '../../utils/videoRange';
 import {selectPreferredAudioStream} from '../../utils/audioTrackSelection';
 import {applyResumeRewind, skipBackSeconds, skipForwardSeconds, zoomInternalFromSetting, zoomSettingFromInternal} from '../../utils/playbackTuning';
@@ -1796,6 +1797,13 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		onPlayNext(episode, options);
 	}, [onPlayNext, item.Id]);
 
+	const cinemaSkip = useCinemaSkip({
+		item, videoQueue, duration, controlsVisible, activeModal,
+		enabled: settings.cinemaModeSkipEnabled === true,
+		onSkip: onPlayNextWithCleanup
+	});
+	const {active: cinemaSkipActive, update: updateCinemaSkip} = cinemaSkip;
+
 	const {carouselOpenRef, openCarousel, stepChannel, markChannelPlaying, carouselProps} = useChannelCarousel({
 		item, isLiveTV, liveTvChannels, sortBy: settings.liveTvChannelSortBy,
 		error, controlsVisible, showControls, hideControls, setFocusRow,
@@ -1939,10 +1947,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				setCurrentSubtitleText(matchingTexts.length > 0 ? matchingTexts.join('\n') : null);
 			}
 			updateSecondary(ticks);
+			updateCinemaSkip(ticks);
 
-			checkSegments(ticks);
+			// A pre-roll with the Skip button runs no segment prompts of its own.
+			if (!cinemaSkipActive) checkSegments(ticks);
 		}
-	}, [checkSegments, subtitleTrackEvents, subtitleOffset, settleGroupSeek, isAudioMode, updateSecondary]);
+	}, [checkSegments, subtitleTrackEvents, subtitleOffset, settleGroupSeek, isAudioMode, updateSecondary, updateCinemaSkip, cinemaSkipActive]);
 
 	const handleWaiting = useCallback(() => {
 		setIsBuffering(true);
@@ -3130,6 +3140,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			// consumed, since Spotlight needs it to leave pointer mode.
 			if (e.keyCode === KEYS.POINTER_HIDE) return;
 
+			if (cinemaSkip.handleKeyDown(e)) return;
 			if (handlePopupKeyDown(e)) return;
 
 			if (e.keyCode === KEYS.PLAY) {
@@ -3433,6 +3444,19 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					progress={skipSegment.progress}
 					countdownStyle={settings.nextUpCountdownStyle ?? 'both'}
 					onSkip={handleSkipSegment}
+					spotlightId="skip-segment-btn"
+					controlsVisible={controlsVisible}
+				/>
+			)}
+
+			{!isLoading && !error && cinemaSkip.shown && !activeModal && (
+				<SkipSegmentOverlay
+					key={item.Id}
+					label={$L('Skip')}
+					remainingSeconds={Math.max(0, Math.round(duration - currentTime))}
+					progress={Math.max(0, (duration - currentTime) / duration)}
+					countdownStyle={settings.nextUpCountdownStyle ?? 'both'}
+					onSkip={cinemaSkip.skip}
 					spotlightId="skip-segment-btn"
 					controlsVisible={controlsVisible}
 				/>

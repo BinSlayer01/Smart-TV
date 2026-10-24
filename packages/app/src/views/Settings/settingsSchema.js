@@ -918,6 +918,7 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.SECTION, id: 'playbackEnhancements', label: () => $L('Playback Enhancements')},
 					{kind: KIND.TOGGLE, key: 'cinemaModeEnabled', label: () => $L('Cinema Mode'), desc: () => $L('Play trailers/prerolls before a main feature'), icon: 'movie_filter'},
 					{kind: KIND.TOGGLE, key: 'cinemaModeEpisodesEnabled', label: () => $L('Cinema Mode for episodes'), desc: () => $L('Also play prerolls before TV episodes'), icon: 'live_tv', when: (ctx) => ctx.settings.cinemaModeEnabled},
+					{kind: KIND.TOGGLE, key: 'cinemaModeSkipEnabled', label: () => $L('Cinema Mode Skip Button'), desc: () => $L('Show a Skip button during Cinema Mode trailers, commercials, and other pre-rolls.'), icon: 'skip_next', when: (ctx) => ctx.settings.cinemaModeEnabled},
 					{kind: KIND.OPTION, key: 'introAction', label: () => $L('Intro Segments'), options: getMediaSegmentActionOptions, fallback: () => $L('Ask to Skip'), icon: 'content_cut', padded: true},
 					{kind: KIND.OPTION, key: 'outroAction', label: () => $L('Outro Segments'), options: getMediaSegmentActionOptions, fallback: () => $L('Ask to Skip'), icon: 'content_cut', padded: true},
 					{kind: KIND.OPTION, key: 'mediaSegmentAutoHide', label: () => $L('Auto Hide Skip Button'), desc: () => $L('Automatically dismiss the skip intro and outro button after a few seconds.'), options: getMediaSegmentAutoHideOptions, fallback: () => $L('Off'), icon: 'visibility_off_outlined', when: (ctx) => ctx.settings.introAction === 'ask' || ctx.settings.outroAction === 'ask'},
