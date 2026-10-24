@@ -337,9 +337,6 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.SECTION, id: 'display', label: () => $L('Display')},
 					{kind: KIND.TOGGLE, key: 'cardFocusZoom', label: () => $L('Focus Expansion Animation'), desc: () => $L('Scale focused or hovered cards and tiles'), icon: 'zoom_in'},
 					{kind: KIND.OPTION, key: 'uiScale', label: () => $L('UI Scaling'), options: getUiScaleOptions, fallback: () => $L('Default'), icon: 'zoom_out_map'},
-					{kind: KIND.TOGGLE, key: 'showHomeBackdrop', label: () => $L('Home Screen Backdrop'), icon: 'photo'},
-					{kind: KIND.TOGGLE, key: 'detailsBackdropEnabled', label: () => $L('Details Screen Backdrop'), icon: 'photo'},
-					{kind: KIND.TOGGLE, key: 'hideBackdropsInLibraries', label: () => $L('Library Backdrops'), icon: 'photo', isOn: (ctx) => !ctx.settings.hideBackdropsInLibraries},
 					{kind: KIND.OPTION, key: 'oledMode', label: () => $L('OLED Mode'), desc: () => $L('Deepen blacks and enrich artwork. Best on OLED displays.'), options: getOledModeOptions, fallback: () => $L('Off'), icon: 'contrast'},
 					{kind: KIND.OPTION, key: 'backdropBlurHome', label: () => $L('Browsing Background Blur'), options: getBlurOptions, fallback: () => $L('Medium'), icon: 'blur_circular'},
 					{kind: KIND.OPTION, key: 'watchedIndicatorBehavior', label: () => $L('Watched Indicators'), options: getWatchedIndicatorOptions, fallback: () => $L('Always'), icon: 'check_circle'},
@@ -402,6 +399,7 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.TOGGLE, key: 'previewAudioEnabled', label: () => $L('Preview Audio'), desc: () => $L('Play the preview with sound.'), icon: 'volume_up', when: (ctx) => !!ctx.settings.episodePreviewEnabled},
 					{kind: KIND.SLIDER, key: 'previewVolume', label: () => $L('Preview Volume'), desc: () => $L('How loud media previews on cards play'), min: 0, max: 100, step: 5, format: percent, icon: 'volume_down', when: (ctx) => !!ctx.settings.episodePreviewEnabled},
 					{kind: KIND.TOGGLE, key: 'homeRowOverlay', label: () => $L('Home Row Info Overlay'), desc: () => $L('Show title and metadata when browsing home rows'), icon: 'info_outline', when: (ctx) => ctx.settings.homeRowsStyle === 'v1'},
+					{kind: KIND.TOGGLE, key: 'showHomeBackdrop', label: () => $L('Home Screen Backdrop'), icon: 'photo'},
 					{kind: KIND.TOGGLE, key: 'hideHomeMediaDescription', label: () => $L('Hide Media Description'), desc: () => $L('Hide the movie or episode descriptive text.'), icon: 'description_outlined'},
 					{kind: KIND.SECTION, id: 'externalSources', label: () => $L('External Sources'), when: whenPlugin},
 					{kind: KIND.NAV, id: 'imdbLists', label: () => $L('IMDb Lists'), desc: () => $L('Configure IMDb Top 250, Popular, and other charts.'), icon: 'movie_outlined', action: (ctx) => ctx.actions.openImdbLists(), when: whenPlugin},
@@ -548,6 +546,7 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.OPTION, key: 'musicLibraryStyle', label: () => $L('Music Library Style'), desc: () => $L("Classic is the original rows under a Jump Back In card. Quick Access starts with a grid of your recent albums and playlists. Immersive leads with the album you're listening to."), options: getMusicLibraryStyleOptions, fallback: () => $L('Immersive'), icon: 'queue_music'},
 					{kind: KIND.TOGGLE, key: 'groupItemsIntoCollections', label: () => $L('Group Items into Collections'), desc: () => $L('Hide Collection associated library items when browsing libraries'), icon: 'collections_bookmark'},
 					{kind: KIND.TOGGLE, key: 'showMediaDetailsOnLibraryPage', label: () => $L('Show Media Details'), desc: () => $L('Show details of the selected item at the top of Library pages.'), icon: 'info_outline'},
+					{kind: KIND.TOGGLE, key: 'hideBackdropsInLibraries', label: () => $L('Library Backdrops'), icon: 'photo', isOn: (ctx) => !ctx.settings.hideBackdropsInLibraries},
 					{kind: KIND.TOGGLE, key: 'useDetailedSubHeadings', label: () => $L('Use Detailed Sub-Headings'), desc: () => $L('Show detailed or minimal subrow on Library pages.'), icon: 'subtitles'}
 				]
 			},
@@ -561,6 +560,7 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.SECTION, id: 'detailsDisplay', label: () => $L('Display')},
 					{kind: KIND.OPTION, key: 'detailScreenStyle', label: () => $L('Details Screen Style'), desc: () => $L('Classic is the original centered moonfin layout. Modern is a responsive cinematic layout. Spotlight is a hero-first layout with pop-up content cards. Nouveau is a full-screen layout with sections stacked down the page. Minimalist is artwork, one play button and the episodes.'), options: getDetailScreenStyleOptions, fallback: () => $L('Modern'), icon: 'movie_outlined'},
 					{kind: KIND.OPTION, key: 'personalRatingStyle', label: () => $L('Personal Rating Style'), options: getPersonalRatingStyleOptions, fallback: () => $L('Like / dislike'), icon: 'rate_review'},
+					{kind: KIND.TOGGLE, key: 'detailsBackdropEnabled', label: () => $L('Details Screen Backdrop'), icon: 'photo'},
 					{
 						kind: KIND.OPTION,
 						key: 'backdropBlurDetail',
