@@ -6,7 +6,7 @@ import * as playback from '../../services/playback';
 import {
 	initTizenAPI, registerAppStateObserver, keepScreenOn, getTizenVersion,
 	avplayOpen, avplayPrepare, avplayPlay, avplayPause,
-	avplaySeek, avplaySeekIdle, avplaySetPostSeekHook, avplayGetCurrentTime, avplayGetDuration, avplayGetState,
+	avplaySeek, avplaySeekIdle, avplaySetPostSeekHook, avplayGetCurrentTime, avplayGetDuration, avplayGetLiveRange, avplayGetState,
 	avplaySetListener, avplaySelectTrack, avplaySetSilentSubtitle,
 	avplayGetTracks, avplayGetCurrentTracks, avplaySetDisplayMethod, avplaySetStreamingProperty, setDisplayWindow, cleanupAVPlay,
 	avplaySetBufferingParams, avplaySuspend, avplayRestore, waitForHlsManifest
@@ -40,10 +40,12 @@ import {getApiForItem} from '../../services/connectionPool';
 import PlayerControls, {usePlayerButtons} from './PlayerControls';
 import {canBrowseEpisodes} from '../../utils/episodeBrowser';
 import useLiveProgram from './useLiveProgram';
+import {isAtLive, liveWindowFor, nextLiveWindow} from './liveWindow';
+import useLiveRecording from './useLiveRecording';
 import useHeldSeekStep from './useHeldSeekStep';
 import {hasTrickplayPreview} from '../../components/TrickplayPreview';
 import {isTrickplayOn} from '../../utils/trickplayLayout';
-import useChannelCarousel from './useChannelCarousel';
+import useChannelCarousel, {liveTvApiFor} from './useChannelCarousel';
 import ChannelCarousel from './ChannelCarousel';
 import useSleepTimer from './useSleepTimer';
 import useSyncPlayCommands from './useSyncPlayCommands';
@@ -98,6 +100,7 @@ const CANVAS_WAIT_STEP_MS = 50;
 const PLAYBACK_SETTLE_MS = 2000;
 // How long a resume gets to start moving after an error was swallowed in pause.
 const RESUME_CHECK_MS = 5000;
+const LIVE_RANGE_READ_MS = 2000;
 
 const getRootFontSizePx = () => {
 	if (typeof window === 'undefined' || typeof document === 'undefined') return 24;
@@ -212,6 +215,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	const [focusRow, setFocusRow] = useState('bottom');
 	const isLiveTV = item.Type === 'TvChannel';
 	const liveProgram = useLiveProgram(item, isLiveTV);
+	const [liveWindow, setLiveWindow] = useState(null);
+	const liveWindowRef = useRef(null);
+	liveWindowRef.current = liveWindow;
+	// How far behind the end of the live range playback started, in seconds.
+	const liveLagRef = useRef(null);
+	const liveRangeReadAtRef = useRef(0);
 	const [isAudioMode, setIsAudioMode] = useState(false);
 	const [isFavorite, setIsFavorite] = useState(false);
 	const [zoomMode, setZoomMode] = useState(() => zoomInternalFromSetting(settings.playerZoomMode));
@@ -400,15 +409,28 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		select: selectSecondary, releaseIfPrimary: releaseSecondaryIfPrimary, offered: offersSecondarySubtitles
 	} = secondary;
 
+	const liveTvApi = useMemo(() => (isLiveTV ? liveTvApiFor(item?._serverUrl) : null), [isLiveTV, item?._serverUrl]);
+	// The carousel is set up further down, after the controls it opens over.
+	const refreshCarouselRecordingsRef = useRef(null);
+	const liveRecording = useLiveRecording({
+		api: liveTvApi,
+		program: liveProgram,
+		controlsVisible,
+		onChanged: () => refreshCarouselRecordingsRef.current?.()
+	});
+
+	const displayTime = isSeeking ? (seekPosition / 10000000) : currentTime;
 	const {topButtons, bottomButtons} = usePlayerButtons({
 		isPaused, audioStreams, subtitleStreams, chapters,
-		nextEpisode, isAudioMode, isLiveTV, hasNextTrack, hasPrevTrack,
+		nextEpisode, isAudioMode, isLiveTV, liveRewind: Boolean(liveWindow), atLive: isAtLive(liveWindow, displayTime), hasNextTrack, hasPrevTrack,
 		shuffleMode, repeatMode, selectedQuality,
 		selectedSubtitleIndex, canDownloadRemoteSubtitles: !isAudioMode && Boolean(item?.Id), hasCastMembers, zoomModeLabel, zoomModeKey: zoomMode,
 		sleepMinutes,
 		canBrowseEpisodes: canBrowseEpisodes({item, isLiveTV, isAudioMode}),
-		isFavorite, hasLyrics: lyrics.lines.length > 0, audioPanel
+		isFavorite, hasLyrics: lyrics.lines.length > 0, audioPanel,
+		recordable: liveRecording.available, recordMark: liveRecording.mark
 	});
+	const prepareRecording = liveRecording.prepare;
 
 	useEffect(() => {
 		zoomModeRef.current = zoomMode;
@@ -468,6 +490,17 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				pendingSegmentSeekRef.current = null;
 				if (held != null) seekToSegmentTarget(held); // eslint-disable-line no-use-before-define
 			}
+		}
+
+		// The range only grows a segment at a time, and AVPlay logs every read of it.
+		if (isLiveTV && Date.now() - liveRangeReadAtRef.current >= LIVE_RANGE_READ_MS) {
+			liveRangeReadAtRef.current = Date.now();
+			const range = avplayGetLiveRange();
+			if (range && liveLagRef.current == null && playbackMovingRef.current) {
+				liveLagRef.current = Math.max(0, range.end - ms) / 1000;
+			}
+			const next = liveWindowFor(range && {start: range.start / 1000, end: range.end / 1000}, liveLagRef.current);
+			setLiveWindow((prev) => nextLiveWindow(prev, next));
 		}
 
 		if (healthMonitorRef.current && state === 'PLAYING') {
@@ -1264,6 +1297,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			prepareSecondaryForItem(item.Id);
 			setMediaSegments(null);
 			setVideoAspectRatio(null);
+			setLiveWindow(null);
+			liveLagRef.current = null;
 			resetPopups(); // eslint-disable-line no-use-before-define
 
 			// Stop any previous playback
@@ -1809,11 +1844,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	});
 	const {active: cinemaSkipActive, update: updateCinemaSkip} = cinemaSkip;
 
-	const {carouselOpenRef, openCarousel, stepChannel, markChannelPlaying, carouselProps} = useChannelCarousel({
+	const {carouselOpenRef, openCarousel, stepChannel, markChannelPlaying, refreshRecordings, carouselProps} = useChannelCarousel({
 		item, isLiveTV, liveTvChannels, sortBy: settings.liveTvChannelSortBy,
 		error, controlsVisible, showControls, hideControls, setFocusRow,
 		onSwitchChannel: onPlayNextWithCleanup
 	});
+	refreshCarouselRecordingsRef.current = refreshRecordings;
 
 	// AVPlay has buffered and started by the time a load finishes without an error.
 	useEffect(() => {
@@ -2041,6 +2077,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		}, RESUME_CHECK_MS);
 	}, []);
 
+	// A live stream has no duration, so its rewind window bounds a seek instead.
+	const seekBoundsMs = useCallback(() => {
+		const live = liveWindowRef.current;
+		return live ? [live.start * 1000, live.edge * 1000] : [0, avplayGetDuration()];
+	}, []);
+
 	// AVPlay keeps reporting the old spot until a seek lands, so skip prompts are held until it has.
 	const seekAsViewer = useCallback((ms) => {
 		const seek = avplaySeek(ms);
@@ -2169,9 +2211,9 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		const step = skipBackSeconds(settings);
 		if (groupSeekTo(positionRef.current - step * 10000000)) return;
 		const ms = avplayGetCurrentTime();
-		const newMs = Math.max(0, ms - step * 1000);
+		const newMs = Math.max(seekBoundsMs()[0], ms - step * 1000);
 		seekAsViewer(newMs).catch(e => console.warn('[Player] Seek failed:', e));
-	}, [settings, groupSeekTo, noteViewerActivity, dropScrub, noteSeek, suppressSeekPrompts, seekAsViewer]);
+	}, [settings, groupSeekTo, noteViewerActivity, dropScrub, noteSeek, suppressSeekPrompts, seekAsViewer, seekBoundsMs]);
 
 	const handleForward = useCallback(() => {
 		if (!avplayReadyRef.current) return;
@@ -2182,10 +2224,24 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		const step = skipForwardSeconds(settings);
 		if (groupSeekTo(positionRef.current + step * 10000000)) return;
 		const ms = avplayGetCurrentTime();
-		const durationMs = avplayGetDuration();
-		const newMs = Math.min(durationMs, ms + step * 1000);
+		const newMs = Math.min(seekBoundsMs()[1], ms + step * 1000);
 		seekAsViewer(newMs).catch(e => console.warn('[Player] Seek failed:', e));
-	}, [settings, groupSeekTo, noteViewerActivity, dropScrub, noteSeek, suppressSeekPrompts, seekAsViewer]);
+	}, [settings, groupSeekTo, noteViewerActivity, dropScrub, noteSeek, suppressSeekPrompts, seekAsViewer, seekBoundsMs]);
+
+	const handleJumpToLive = useCallback(() => {
+		const live = liveWindowRef.current;
+		if (!live || !avplayReadyRef.current) return;
+		noteViewerActivity();
+		dropScrub();
+		// Not through handlePlayPause, whose unpause rewind would seek back again after the jump.
+		if (avplayGetState() === 'PAUSED') {
+			avplayPlay();
+			setIsPaused(false);
+			healthMonitorRef.current?.setPaused(false);
+			playback.reportProgress(positionRef.current, {isPaused: false, eventName: 'unpause'});
+		}
+		seekAsViewer(live.edge * 1000).catch(e => console.warn('[Player] Seek failed:', e));
+	}, [noteViewerActivity, dropScrub, seekAsViewer]);
 
 	// Modal handlers
 	const openModal = useCallback((modal, keepReturnFocus = false) => {
@@ -2537,11 +2593,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		beginScrub();
 		setIsSeeking(true);
 		const baseMs = pendingSeekMsRef.current != null ? pendingSeekMsRef.current : avplayGetCurrentTime();
-		const newMs = Math.min(avplayGetDuration(), Math.max(0, baseMs + deltaSeconds * 1000));
+		const [minMs, maxMs] = seekBoundsMs();
+		const newMs = Math.min(maxMs, Math.max(minMs, baseMs + deltaSeconds * 1000));
 		setSeekPosition(Math.floor(newMs * 10000));
 		if (scrubHoldRef.current.active) pendingSeekMsRef.current = newMs;
 		else scheduleDeferredSeek(newMs);
-	}, [noteViewerActivity, suppressSeekPrompts, beginScrub, scheduleDeferredSeek]);
+	}, [noteViewerActivity, suppressSeekPrompts, beginScrub, scheduleDeferredSeek, seekBoundsMs]);
 
 	// Progress bar keyboard control - deferred seeking
 	const handleProgressKeyDown = useCallback((e) => {
@@ -2635,6 +2692,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			case 'playPause': handlePlayPause(); break;
 			case 'rewind': handleRewind(); break;
 			case 'forward': handleForward(); break;
+			case 'jumpToLive': handleJumpToLive(); break;
+			case 'record': prepareRecording().then((ready) => ready && openModal('record')); break;
 			case 'audio': openModal('audio'); break;
 			case 'subtitle': openModal(offersSecondarySubtitles ? 'subtitleSlot' : 'subtitle'); break;
 			case 'quality': openModal('quality'); break;
@@ -2657,7 +2716,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			case 'queue': handleSelectAudioPanel(action); break;
 			default: break;
 		}
-	}, [showControls, handlePlayPause, handleRewind, handleForward, openModal, offersSecondarySubtitles, handleOpenCast, handleToggleZoom, handleOpenGuide, openCarousel, handlePlayNextNow, handleNextTrack, handlePrevTrack, handleToggleShuffle, handleToggleRepeat, handleToggleFavorite, handleSelectAudioPanel]);
+	}, [showControls, handlePlayPause, handleRewind, handleForward, handleJumpToLive, prepareRecording, openModal, offersSecondarySubtitles, handleOpenCast, handleToggleZoom, handleOpenGuide, openCarousel, handlePlayNextNow, handleNextTrack, handlePrevTrack, handleToggleShuffle, handleToggleRepeat, handleToggleFavorite, handleSelectAudioPanel]);
 
 	const handleControlButtonClick = useCallback((e) => {
 		const action = e.currentTarget.dataset.action;
@@ -3029,14 +3088,14 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			if (e.keyCode === KEYS.FAST_FORWARD) {
 				e.preventDefault();
 				e.stopPropagation();
-				if (!isLiveTV) handleForward();
+				if (!isLiveTV || liveWindow) handleForward();
 				showControls();
 				return;
 			}
 			if (e.keyCode === KEYS.REWIND) {
 				e.preventDefault();
 				e.stopPropagation();
-				if (!isLiveTV) handleRewind();
+				if (!isLiveTV || liveWindow) handleRewind();
 				showControls();
 				return;
 			}
@@ -3115,7 +3174,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 					e.preventDefault();
 					// Same as Enter, or the focused progress bar adds a second step.
 					e.stopPropagation();
-					if (isLiveTV) { showControls(); return; }
+					if (isLiveTV && !liveWindow) { showControls(); return; }
 					showControls();
 					setFocusRow('progress');
 					scrubBy(heldSeekStep(key === 'ArrowLeft' || e.keyCode === 37 ? -1 : 1));
@@ -3171,8 +3230,6 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		return () => window.removeEventListener('keydown', onKeyDown, true);
 	}, []);
 
-	// Calculate progress - use seekPosition when actively seeking for smooth scrubbing
-	const displayTime = isSeeking ? (seekPosition / 10000000) : currentTime;
 	const progressPercent = duration > 0 ? (displayTime / duration) * 100 : 0;
 	// AVPlay reports no buffered ranges, so there is nothing real to draw and the bar
 	// would only trace the fill sitting under it.
@@ -3358,6 +3415,8 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				activeModal={activeModal}
 				isAudioMode={isAudioMode}
 				isLiveTV={isLiveTV}
+				liveWindow={liveWindow}
+				liveRecording={liveRecording}
 				liveProgram={liveProgram}
 				focusRow={focusRow}
 				title={title}

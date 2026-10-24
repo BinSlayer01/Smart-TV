@@ -20,6 +20,7 @@ import * as jellyfinApi from '../services/jellyfinApi';
 import {adoptLegacyBlockedRatings, loadParentalControls, parentalScopeKey, setParentalScope} from '../services/parentalControls';
 import {libraryIdOf, seerrDetailStub} from '../utils/seerrTarget';
 import {setTmdbThumbsAvailable} from '../utils/tmdbThumb';
+import {configureIncompleteRecordings} from '../services/incompleteRecordings';
 import serverLogger from '../services/serverLogger';
 import * as remoteControl from '../services/remoteControl';
 import {isBackKey, KEYS} from '../utils/keys';
@@ -373,6 +374,13 @@ const AppContent = (props) => {
 	useEffect(() => {
 		serverLogger.setClientLogSupported(pluginInfo?.clientLogSupported === true);
 	}, [pluginInfo]);
+
+	useEffect(() => {
+		configureIncompleteRecordings({
+			supported: !!settings.useMoonfinPlugin && pluginInfo?.incompleteRecordingsSupported === true,
+			canManage: user?.Policy?.EnableLiveTvManagement === true
+		});
+	}, [pluginInfo, settings.useMoonfinPlugin, user]);
 
 	// The cards read this without the Seerr context, so a title the server doesn't hold
 	// can grow into the plugin's titled thumb.

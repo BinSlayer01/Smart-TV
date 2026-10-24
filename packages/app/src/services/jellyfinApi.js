@@ -873,11 +873,18 @@ export const api = {
 
 	// No bare id fallback here, a series timer is only valid as a fully
 	// populated dto and the defaults call is the only thing that produces one.
-	createLiveTvSeriesTimer: async (programId) => {
-		const payload = {...(await api.getLiveTvTimerDefaults(programId))};
+	// The flags pick which episodes it records on top of those defaults.
+	createLiveTvSeriesTimer: async (programId, flags) => {
+		const payload = {...(await api.getLiveTvTimerDefaults(programId)), ...flags};
 		if (payload.ProgramId == null) payload.ProgramId = programId;
 		return request(`/LiveTv/SeriesTimers`, {method: 'POST', body: payload});
 	},
+
+	getLiveTvSeriesTimer: (seriesTimerId) =>
+		request(`/LiveTv/SeriesTimers/${seriesTimerId}`),
+
+	updateLiveTvSeriesTimer: (seriesTimerId, rule) =>
+		request(`/LiveTv/SeriesTimers/${seriesTimerId}`, {method: 'POST', body: rule}),
 
 	cancelLiveTvSeriesTimer: (seriesTimerId) =>
 		request(`/LiveTv/SeriesTimers/${seriesTimerId}`, {

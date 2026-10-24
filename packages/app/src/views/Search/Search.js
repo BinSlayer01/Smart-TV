@@ -22,6 +22,7 @@ import {showsWatchedCheck} from '../../utils/playedState';
 import {isGameLibrary, resolveGameLibraryId} from '../../utils/gameLibrary';
 import {groupSearchResults, aspectClassForType, isCircleType, filterByName, fetchAllGames, filterGames} from '../../utils/searchGroups';
 import {foldForSearch} from '../../utils/accentFolding';
+import {episodeLine} from '../../utils/liveTvGuide';
 import SpottableInput from '../../components/SpottableInput/SpottableInput';
 import {closeTvKeyboard} from '../../components/TVKeyboard/keyboardBus';
 import useStorage from '../../hooks/useStorage';
@@ -95,6 +96,8 @@ const jellyfinSubtitle = (item) => {
 	switch (item.Type) {
 		case 'Episode':
 			return `${item.SeriesName || ''} S${item.ParentIndexNumber ?? '?'}E${item.IndexNumber ?? '?'}`;
+		case 'Program':
+			return episodeLine(item) || item.ProductionYear || '';
 		case 'Person':
 			return $L('Person');
 		case 'MusicArtist':
