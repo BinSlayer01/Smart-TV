@@ -367,9 +367,10 @@ const useDetailsItem = ({itemId, initialItem, effectiveApi, effectiveServerUrl, 
 				// Older servers have to ask every collection what it holds, so the rest isnt kept
 				// waiting on that.
 				const collectionsLookup = needsBoxSet ? findParentCollections(effectiveApi, data).catch(() => []) : Promise.resolve([]);
-				const [similarResult, extrasData] = await Promise.all([
+				const [similarResult, extrasData, partsData] = await Promise.all([
 					fetchSimilar(),
-					needsExtras ? effectiveApi.getSpecialFeatures(itemId).catch(() => null) : Promise.resolve(null)
+					needsExtras ? effectiveApi.getSpecialFeatures(itemId).catch(() => null) : Promise.resolve(null),
+					needsExtras && data.PartCount > 1 ? effectiveApi.getAdditionalParts(itemId).catch(() => null) : Promise.resolve(null)
 				]);
 
 				if (similarResult?.data) {
@@ -379,7 +380,10 @@ const useDetailsItem = ({itemId, initialItem, effectiveApi, effectiveServerUrl, 
 				// Recorded whether or not anything came back, so a section that holds its place
 				// while the answer is out knows when to stop holding it.
 				setSimilarLoaded(true);
-				if (extrasData) setExtras(tagWithServerInfo(withoutBlockedItems(extrasData.filter(e => e.Id !== itemId))));
+				const parts = (partsData?.Items || []).map((part) => ({...part, _additionalPart: true}));
+				if (extrasData || parts.length) {
+					setExtras(tagWithServerInfo(withoutBlockedItems([...parts, ...(extrasData || []).filter(e => e.Id !== itemId)])));
+				}
 				const collections = await collectionsLookup;
 				for (const boxSet of collections) {
 					const colData = await effectiveApi.getItems({

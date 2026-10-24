@@ -324,6 +324,14 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 		};
 	}, [item, supportsStreamSelection, selectedVersionIndex, selectedAudioIndex, selectedSubtitleIndex]);
 
+	// A movie split across files plays its other parts after it. A picked alternate version has
+	// parts of its own, so they're asked for by the version that plays.
+	const fetchAdditionalParts = useCallback(async (mediaSourceId) => {
+		if (!(item.PartCount > 1)) return [];
+		const result = await effectiveApi.getAdditionalParts(mediaSourceId || item.Id).catch(() => null);
+		return tagWithServerInfo(result?.Items || []);
+	}, [item, effectiveApi, tagWithServerInfo]);
+
 	// A list plays on from the pressed row. Songs and videos go to different players, so the
 	// queue only carries the rows the same player can take.
 	const playListFrom = useCallback((list, entry) => {
@@ -373,24 +381,29 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 			const first = matched || tracks[0];
 			if (tracks.length > 0 && first) playListFrom(tracks, first);
 		} else {
-			// A SyncPlay group queues the pressed item for everyone, so intros stay out of it.
-			const prerolls = isSyncPlayInGroup
-				? []
-				: tagWithServerInfo(await fetchPrerolls(effectiveApi, item, settings));
+			// A SyncPlay group queues the pressed item for everyone, so intros and parts stay out of it.
+			const [prerolls, parts] = isSyncPlayInGroup
+				? [[], []]
+				: await Promise.all([
+					fetchPrerolls(effectiveApi, item, settings).then(tagWithServerInfo),
+					fetchAdditionalParts(playbackOptions.mediaSourceId)
+				]);
 			if (prerolls.length > 0) {
 				// The version, audio and subtitle picks belong to the movie, and the queue
 				// starts on an intro, so applying them here would target the wrong file.
-				onPlay?.(prerolls[0], false, {videoQueue: [...prerolls, item]});
+				onPlay?.(prerolls[0], false, {videoQueue: [...prerolls, item, ...parts]});
 			} else {
-				onPlay?.(item, false, playbackOptions);
+				onPlay?.(item, false, parts.length ? {...playbackOptions, videoQueue: [item, ...parts]} : playbackOptions);
 			}
 		}
-	}, [item, episodes, nextUp, seasons, collectionItems, albumTracks, playlistItems, onPlay, onSelectItem, buildPlaybackOptions, effectiveApi, settings, tagWithServerInfo, isSyncPlayInGroup, playListFrom]);
+	}, [item, episodes, nextUp, seasons, collectionItems, albumTracks, playlistItems, onPlay, onSelectItem, buildPlaybackOptions, effectiveApi, settings, tagWithServerInfo, isSyncPlayInGroup, playListFrom, fetchAdditionalParts]);
 
-	const handleResume = useCallback(() => {
+	const handleResume = useCallback(async () => {
 		if (!item) return;
-		onPlay?.(item, true, buildPlaybackOptions());
-	}, [item, onPlay, buildPlaybackOptions]);
+		const playbackOptions = buildPlaybackOptions();
+		const parts = isSyncPlayInGroup ? [] : await fetchAdditionalParts(playbackOptions.mediaSourceId);
+		onPlay?.(item, true, parts.length ? {...playbackOptions, videoQueue: [item, ...parts]} : playbackOptions);
+	}, [item, onPlay, buildPlaybackOptions, isSyncPlayInGroup, fetchAdditionalParts]);
 
 	// Plays the item on screen the way a card's Play does, carrying on from where it was left.
 	const playItemOnScreen = useCallback(() => {

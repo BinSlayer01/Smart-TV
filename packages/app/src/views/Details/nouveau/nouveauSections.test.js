@@ -56,6 +56,12 @@ describe('nouveauSectionOrder', () => {
 		});
 		expect(sections).toEqual(['episodes', 'chapters', 'extras', 'discovery', 'people', 'details']);
 	});
+
+	it("puts a movie's other parts ahead of its extras", () => {
+		expect(nouveauSectionOrder({type: 'Movie', partCount: 1, extraCount: 2, similarLoaded: true}))
+			.toEqual(['additionalParts', 'extras', 'details']);
+		expect(nouveauSectionOrder({type: 'Movie', similarLoaded: true})).not.toContain('additionalParts');
+	});
 });
 
 describe('shouldIncludeDiscovery', () => {

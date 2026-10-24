@@ -15,6 +15,7 @@ import ModernActionButtons from './ModernActionButtons';
 import {getImageUrl, formatDuration} from '../../utils/helpers';
 import {formatPlaybackDuration} from '../../utils/playbackTimeLabels';
 import {castPhotoUrl, hidesMediaDescription} from './detailsMedia';
+import {splitAdditionalParts} from './extraCategories';
 import {studioCardsFor, studioLogoIndex} from './studioLogos';
 import ExpandableOverview from './ExpandableOverview';
 import ModernFileInformation from './ModernFileInformation';
@@ -399,6 +400,8 @@ const ModernDetailContent = (props) => {
 	const showsDetails = showsSection('mediaInfo') && supportsMediaSourceSelection && mediaSource?.MediaStreams?.length;
 	// Tabs are data-driven, appearing only when their data is present. A section the viewer
 	// switched off counts as one with nothing in it, so its tab goes the same way.
+	const {parts: additionalParts, others: otherExtras} = useMemo(() => splitAdditionalParts(extras), [extras]);
+
 	const tabs = useMemo(() => {
 		const list = [];
 		if (isSeries && seasons.length) list.push({id: 'seasons', label: $L('Seasons')});
@@ -414,13 +417,14 @@ const ModernDetailContent = (props) => {
 		if (crew.length) list.push({id: 'crew', label: $L('Crew')});
 		if (studios?.length) list.push({id: 'studios', label: $L('Studios')});
 		if (chapters?.length) list.push({id: 'chapters', label: $L('Chapters')});
-		if (extras.length) list.push({id: 'extras', label: $L('Extras')});
+		if (additionalParts.length) list.push({id: 'additionalParts', label: $L('Additional Parts')});
+		if (otherExtras.length) list.push({id: 'extras', label: $L('Extras')});
 		if (showsDetails) list.push({id: 'details', label: $L('Details')});
 		if (collectionSections.length) list.push({id: 'collection', label: collectionTabLabel});
 		if (similar.length) list.push({id: 'similar', label: $L('More Like This')});
 		if (seerr.hasTabContent) list.push({id: 'seerr', label: seerr.displayName});
 		return list;
-	}, [isSeries, seasons.length, listsEpisodes, episodes.length, isPerson, personMovies.length, personSeries.length, isAlbum, isPlaylist, albumTracks.length, isMusicArtist, artistAlbums.length, isBoxSet, collectionItems.length, collectionSections.length, collectionTabLabel, cast.length, crew.length, studios, chapters, extras.length, showsDetails, similar.length, seerr.hasTabContent, seerr.displayName]);
+	}, [isSeries, seasons.length, listsEpisodes, episodes.length, isPerson, personMovies.length, personSeries.length, isAlbum, isPlaylist, albumTracks.length, isMusicArtist, artistAlbums.length, isBoxSet, collectionItems.length, collectionSections.length, collectionTabLabel, cast.length, crew.length, studios, chapters, additionalParts.length, otherExtras.length, showsDetails, similar.length, seerr.hasTabContent, seerr.displayName]);
 
 	const [activeTab, setActiveTab] = useState(null);
 	// Expanded Tabs on keeps the first tab open and lets focus follow selection.
@@ -565,9 +569,9 @@ const ModernDetailContent = (props) => {
 		</RowContainer>
 	);
 
-	const renderExtrasTab = () => (
+	const renderExtrasTab = (items) => (
 		<RowContainer className={css.grid}>
-			{extras.map((extra) => {
+			{items.map((extra) => {
 				const thumb = extra.ImageTags?.Primary
 					? getImageUrl(effectiveServerUrl, extra.Id, 'Primary', {maxWidth: 400, quality: 80})
 					: null;
@@ -727,8 +731,10 @@ const ModernDetailContent = (props) => {
 				return renderPeople(crew);
 			case 'chapters':
 				return renderChaptersTab();
+			case 'additionalParts':
+				return renderExtrasTab(additionalParts);
 			case 'extras':
-				return renderExtrasTab();
+				return renderExtrasTab(otherExtras);
 			case 'tracks':
 				return renderTracksTab();
 			case 'studios':

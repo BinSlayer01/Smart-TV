@@ -38,8 +38,9 @@ import {
 } from './nouveauMetrics';
 import {
 	SECTION_CHAPTERS, SECTION_COLLECTION, SECTION_DETAILS, SECTION_DISCOVERY, SECTION_EPISODES,
-	SECTION_EXTRAS, SECTION_PEOPLE, nouveauSectionOrder, seerrDiscoveryExpected
+	SECTION_EXTRAS, SECTION_PARTS, SECTION_PEOPLE, nouveauSectionOrder, seerrDiscoveryExpected
 } from './nouveauSections';
+import {splitAdditionalParts} from '../extraCategories';
 import {scrimStyle} from '../../../utils/scrimImage';
 
 import sectionsCss from './sections/NouveauSections.module.less';
@@ -141,6 +142,7 @@ const NouveauDetailContent = (props) => {
 	};
 
 	const chapters = showsSection('chapters') ? item.Chapters : undefined;
+	const {parts: additionalParts, others: otherExtras} = useMemo(() => splitAdditionalParts(extras), [extras]);
 
 	const sections = useMemo(() => {
 		if (isPerson) return [...personRails.map((rail) => rail.id), SECTION_DETAILS];
@@ -149,7 +151,8 @@ const NouveauDetailContent = (props) => {
 		return nouveauSectionOrder({
 			type: item.Type,
 			chapterCount: chapters?.length || 0,
-			extraCount: extras.length,
+			partCount: additionalParts.length,
+			extraCount: otherExtras.length,
 			actorCount: cast.length,
 			// Directors and writers arrive as one crew list here, so the gate weighs two counts.
 			directorCount: crew.length,
@@ -169,7 +172,7 @@ const NouveauDetailContent = (props) => {
 			seerrRecommendationCount: (seerrState.recommendationCards || []).length
 		});
 	}, [
-		item.Type, chapters, item.ProviderIds, isPerson, personRails, extras.length, cast.length,
+		item.Type, chapters, item.ProviderIds, isPerson, personRails, additionalParts.length, otherExtras.length, cast.length,
 		crew.length, similarLoaded, similar.length, seerrOnly, seerr, showsSection
 	]);
 
@@ -476,11 +479,11 @@ const NouveauDetailContent = (props) => {
 			);
 		}
 
-		if (id === SECTION_EXTRAS) {
+		if (id === SECTION_PARTS || id === SECTION_EXTRAS) {
 			return (
 				<NouveauRail
-					title={$L('Extras')}
-					items={extras}
+					title={id === SECTION_PARTS ? $L('Additional Parts') : $L('Extras')}
+					items={id === SECTION_PARTS ? additionalParts : otherExtras}
 					gap={RAIL_GAP}
 					spotlightId={`nouveau-rail-${id}`}
 					navbarPosition={settings.navbarPosition}

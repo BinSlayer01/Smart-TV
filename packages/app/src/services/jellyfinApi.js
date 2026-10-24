@@ -1332,6 +1332,9 @@ export const createApiForServer = (serverUrl, token, userId, serverTypeOverride 
 		getSpecialFeatures: (itemId) =>
 			serverRequest(serverUserRoutes.extras(itemId, 'SpecialFeatures')),
 
+		getAdditionalParts: (itemId) =>
+			serverRequest(`/Videos/${itemId}/AdditionalParts?UserId=${userId}`),
+
 		getAncestors: (itemId) =>
 			serverRequest(`/Items/${itemId}/Ancestors?UserId=${userId}`),
 
