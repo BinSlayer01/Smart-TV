@@ -47,6 +47,7 @@ import DetailTrackModals from './DetailTrackModals';
 import DetailDialogs from './DetailDialogs';
 import SeerrDialogs from './SeerrDialogs';
 import TrailerOverlay from './TrailerOverlay';
+import TrailerPicker from './TrailerPicker';
 import PersonalRatingDialog from '../../components/PersonalRatingDialog';
 import {clampRating, clearedRatingPatch, isRatableItemType, normalizeRatingStyle, numericRatingPatch, thumbRatingPatch} from '../../utils/personalRating';
 import {personDateLines, splitFilmography} from '../../utils/personCredits';
@@ -211,6 +212,8 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 		effectiveApi,
 		onPlay,
 		trailerVolume: settings.trailerVolume,
+		showCaptions: settings.mediaBarTrailerCaptions,
+		captionLanguage: settings.uiLanguage,
 		seerrOnly,
 		backRef: trailerBackRef
 	});
@@ -1016,12 +1019,21 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 	);
 
 	const trailerLayer = (
-		<TrailerOverlay
-			videoId={trailer.trailerOverlay}
-			streamUrl={trailer.trailerStreamUrl}
-			videoRef={trailer.trailerVideoRef}
-			onClose={trailer.handleCloseTrailer}
-		/>
+		<>
+			<TrailerPicker
+				choices={trailer.trailerChoices}
+				item={item}
+				serverUrl={effectiveServerUrl}
+				onPick={trailer.pickTrailer}
+				onClose={trailer.closeTrailerChoices}
+			/>
+			<TrailerOverlay
+				videoId={trailer.trailerOverlay}
+				streamUrl={trailer.trailerStreamUrl}
+				videoRef={trailer.trailerVideoRef}
+				onClose={trailer.handleCloseTrailer}
+			/>
+		</>
 	);
 
 	const overlays = (
