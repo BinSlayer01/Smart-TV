@@ -37,6 +37,10 @@ export const SEGMENT_FETCH_TIMEOUT = 20000;
 // starts anyway and the subtitles show up once the renderer catches up.
 export const ASS_READY_WAIT = 15000;
 
+// The longest the Fetching subtitles indicator waits on an ASS track, since the renderer
+// has no way of saying the server never answered.
+export const ASS_FETCH_INDICATOR_LIMIT = 180000;
+
 const MaterialIcon = ({path}) => (
 	<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true" focusable="false">
 		<path d={path} />

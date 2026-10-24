@@ -42,6 +42,7 @@ import * as syncPlayService from '../../services/syncPlay';
 import {resolveSubtitleStyleSettings} from '../../utils/subtitleConstants';
 import SubtitleTextOverlay from './SubtitleTextOverlay';
 import useSecondarySubtitle from './useSecondarySubtitle';
+import useSubtitleFetch from './useSubtitleFetch';
 import {isHdrOutput, findVideoStream} from '../../utils/videoRange';
 import {selectPreferredAudioStream} from '../../utils/audioTrackSelection';
 import {applyResumeRewind, skipBackSeconds, skipForwardSeconds, zoomInternalFromSetting, zoomSettingFromInternal} from '../../utils/playbackTuning';
@@ -76,7 +77,7 @@ import {createSkipGovernor, chooseCorrection, STALL_DEBOUNCE_MS} from '../../uti
 import {syncLog} from '../../utils/syncLog';
 import {
 	NextEpisodeContainer, CONTROLS_HIDE_DELAY,
-	withTimeout, SEGMENT_FETCH_TIMEOUT, ASS_READY_WAIT
+	withTimeout, SEGMENT_FETCH_TIMEOUT, ASS_READY_WAIT, ASS_FETCH_INDICATOR_LIMIT
 } from './PlayerConstants';
 import {
 	toSubtitleLanguage,
@@ -170,6 +171,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	const [subtitleOffset, setSubtitleOffset] = useState(0);
 	const subtitleOffsetRef = useRef(0);
 	subtitleOffsetRef.current = subtitleOffset;
+	const {loading: subtitleFetching, track: trackSubtitleFetch, clear: clearSubtitleFetch} = useSubtitleFetch();
 	const [controlsVisible, setControlsVisible] = useState(false);
 	const [activeModal, setActiveModal] = useState(null);
 	// Read by the time update, whose handler only catches up with state after a render.
@@ -548,7 +550,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				disposeAssRenderer(assRendererRef.current);
 				assRendererRef.current = null;
 				clearAssCanvas(assCanvasRef.current);
-				playback.fetchSubtitleData(stream).then(data => {
+				trackSubtitleFetch(playback.fetchSubtitleData(stream)).then(data => {
 					setSubtitleTrackEvents(data?.TrackEvents || null);
 				}).catch(() => setSubtitleTrackEvents(null));
 			});
@@ -561,6 +563,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				assRendererRef.current = renderer;
 				setSubtitleTrackEvents(null);
 				applyVideoAndAssGeometry();
+				trackSubtitleFetch(waitForAssReady(renderer, ASS_FETCH_INDICATOR_LIMIT, () => assRendererRef.current === renderer));
 				if (waitMs) await waitForAssReady(renderer, waitMs, isCurrent);
 				return true;
 			}
@@ -570,7 +573,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		if (!isCurrent()) return false;
 
 		try {
-			const data = await playback.fetchSubtitleData(stream);
+			const data = await trackSubtitleFetch(playback.fetchSubtitleData(stream));
 			if (!isCurrent()) return false;
 			if (data && data.TrackEvents) {
 				setSubtitleTrackEvents(data.TrackEvents);
@@ -582,7 +585,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		}
 
 		return false;
-	}, [applyVideoAndAssGeometry]);
+	}, [applyVideoAndAssGeometry, trackSubtitleFetch]);
 
 	// Both the first use of a subtitle and a change away from another one land here, the
 	// same way the ASS renderer does, so a PGS track can be picked at any point.
@@ -643,13 +646,13 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 	const loadTextTrack = useCallback((stream) => {
 		const generation = assInitGenRef.current;
 		setSubtitleTrackEvents(null);
-		playback.fetchSubtitleData(stream).then((data) => {
+		trackSubtitleFetch(playback.fetchSubtitleData(stream)).then((data) => {
 			if (generation !== assInitGenRef.current) return;
 			setSubtitleTrackEvents(data?.TrackEvents || null);
 		}).catch((err) => {
 			console.error('[Player] Error fetching subtitle data:', err);
 		});
-	}, []);
+	}, [trackSubtitleFetch]);
 
 	useEffect(() => {
 		const init = async () => {
@@ -890,6 +893,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			setSubtitleTrackEvents(null);
 			setCurrentSubtitleText(null);
 			setSelectedSubtitleIndex(-1);
+			clearSubtitleFetch();
 			prepareSecondaryForItem(item.Id);
 			setVideoDisplayAspectRatio(null);
 			setDecodedAspectRatio(null);
@@ -2480,6 +2484,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 
 	const applySubtitleSelection = useCallback(async (index, streamList = subtitleStreams, shouldClose = true) => {
 		playback.updateCurrentSession({subtitleStreamIndex: index});
+		clearSubtitleFetch();
 
 		pgsInitGenRef.current++;
 		disposePgsRenderer(pgsRendererRef.current);
@@ -2548,7 +2553,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		if (shouldClose) {
 			closeModal();
 		}
-	}, [item, subtitleStreams, closeModal, settings.enablePgsRendering, initAssRendererForStream, initPgsRendererForStream, loadTextTrack, reloadWithSubtitleIndex, releaseSecondaryIfPrimary]);
+	}, [item, subtitleStreams, closeModal, settings.enablePgsRendering, initAssRendererForStream, initPgsRendererForStream, loadTextTrack, reloadWithSubtitleIndex, releaseSecondaryIfPrimary, clearSubtitleFetch]);
 
 	const handleOpenRemoteSubtitleSearch = useCallback(async () => {
 		if (!item?.Id) return;
@@ -3508,6 +3513,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				handleOpenSecondarySubtitleOffset={handleOpenSecondarySubtitleOffset}
 				handleOpenSecondarySubtitleSettings={handleOpenSecondarySubtitleSettings}
 				handleSecondarySubtitleOffsetChange={secondary.setDelay}
+				subtitleFetching={subtitleFetching || secondary.loading}
 				closeModal={closeModal}
 				stopPropagation={stopPropagation}
 				transcodeForced={settings.preferTranscode}

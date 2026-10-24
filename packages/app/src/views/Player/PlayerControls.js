@@ -8,6 +8,7 @@ import {isTrickplayOn} from '../../utils/trickplayLayout';
 import SubtitleOffsetOverlay from './SubtitleOffsetOverlay';
 import SubtitleSettingsOverlay from './SubtitleSettingsOverlay';
 import SecondarySubtitleSettingsOverlay from './SecondarySubtitleSettingsOverlay';
+import SubtitleFetchIndicator, {useSubtitleFetchShown} from './SubtitleFetchIndicator';
 import {getPlatform} from '../../platform';
 import {ModalContainer} from '../../utils/spotlightContainers';
 import {numberedTrackName, sortSubtitleStreams, subtitleTrackDetail, audioTrackDetail} from '../../utils/trackLabels';
@@ -212,6 +213,7 @@ const PlayerControls = ({
 	handleOpenSecondarySubtitleOffset,
 	handleOpenSecondarySubtitleSettings,
 	handleSecondarySubtitleOffsetChange,
+	subtitleFetching,
 	closeModal,
 	stopPropagation,
 	transcodeForced,
@@ -266,6 +268,8 @@ const PlayerControls = ({
 	// nothing to report instead.
 	const remoteSubtitleBusy = isSearchingRemoteSubtitles || isDownloadingRemoteSubtitle;
 	const showRemoteSubtitleResults = !remoteSubtitleBusy && !remoteSubtitleError;
+	const showSubtitleFetch = useSubtitleFetchShown(subtitleFetching) && !isAudioMode;
+	const controlsShown = controlsVisible && !activeModal;
 
 	const subtitleSlotLabel = (index) => {
 		const stream = subtitleStreams.find((s) => s.index === index);
@@ -345,7 +349,7 @@ const PlayerControls = ({
 
 	return (
 		<>
-			<div className={`${css.playerControls} ${controlsVisible && !activeModal ? css.visible : ''} ${isAudioMode ? css.audioControls : ''}`}>
+			<div className={`${css.playerControls} ${controlsShown ? css.visible : ''} ${isAudioMode ? css.audioControls : ''}`}>
 				{!isAudioMode && (
 				<div className={css.controlsTop}>
 					{isLiveTV ? (
@@ -383,6 +387,7 @@ const PlayerControls = ({
 				)}
 
 				<div className={css.controlsBottom} data-player-controls-bottom>
+					{showSubtitleFetch && controlsShown && <SubtitleFetchIndicator />}
 					{isLiveTV && (() => {
 						// The live timeline is the current program's span, not a seek bar.
 						// Without guide data it falls back to a clock and a LIVE tag.
@@ -546,6 +551,8 @@ const PlayerControls = ({
 					</ModalContainer>
 				</div>
 			)}
+
+			{showSubtitleFetch && !controlsShown && <SubtitleFetchIndicator standalone />}
 
 			{activeModal === 'subtitleSlot' && (
 				<div className={css.trackModal} onClick={closeModal}>

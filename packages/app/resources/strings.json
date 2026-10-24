@@ -535,6 +535,7 @@
 	"Falling Leaves": "Falling Leaves",
 	"Family": "Family",
 	"FAVORITES": "FAVORITES",
+	"Fetching subtitles": "Fetching subtitles",
 	"File bitrate ({fileBitrate}) exceeds the configured streaming limit ({maxBitrate}).": "File bitrate ({fileBitrate}) exceeds the configured streaming limit ({maxBitrate}).",
 	"File bitrate exceeds player streaming limit.": "File bitrate exceeds player streaming limit.",
 	"File, streams and Direct Play check": "File, streams and Direct Play check",

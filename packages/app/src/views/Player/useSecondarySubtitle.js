@@ -4,6 +4,7 @@ import {getItemSecondarySubtitlePref, saveSecondarySubtitlePref} from '../../ser
 import {
 	clampSecondaryDelay, isSecondaryEligible, restoreSecondaryIndex, secondaryCandidates, secondaryCueText, secondarySelection
 } from './secondarySubtitle';
+import useSubtitleFetch from './useSubtitleFetch';
 
 /**
  * The second subtitle track, shared by both players. A pick is remembered per item, a new
@@ -20,6 +21,7 @@ const useSecondarySubtitle = ({subtitleStreams, primaryIndex, preferExternal, pr
 	const itemIdRef = useRef(null);
 	// Bumped by every pick, item and unmount, so a track that lands late is dropped.
 	const generationRef = useRef(0);
+	const {loading, track: trackFetch, clear: clearFetch} = useSubtitleFetch();
 
 	useEffect(() => () => { generationRef.current++; }, []);
 
@@ -32,12 +34,13 @@ const useSecondarySubtitle = ({subtitleStreams, primaryIndex, preferExternal, pr
 
 	const clearTrack = useCallback(() => {
 		generationRef.current++;
+		clearFetch();
 		indexRef.current = null;
 		eventsRef.current = null;
 		setIndex(null);
 		setEvents(null);
 		setText(null);
-	}, []);
+	}, [clearFetch]);
 
 	// Nothing waits on the fetch. The server may still be pulling the track out of the
 	// file, and the lines fill in once it answers.
@@ -48,12 +51,12 @@ const useSecondarySubtitle = ({subtitleStreams, primaryIndex, preferExternal, pr
 		setIndex(stream.index);
 		setEvents(null);
 		setText(null);
-		playback.fetchSubtitleData(stream).then((data) => {
+		trackFetch(playback.fetchSubtitleData(stream)).then((data) => {
 			if (generation !== generationRef.current) return;
 			eventsRef.current = data?.TrackEvents || null;
 			setEvents(eventsRef.current);
 		});
-	}, []);
+	}, [trackFetch]);
 
 	const select = useCallback((item, streamList, nextIndex) => {
 		const stream = nextIndex >= 0 ? streamList.find((s) => s.index === nextIndex) : null;
@@ -97,7 +100,7 @@ const useSecondarySubtitle = ({subtitleStreams, primaryIndex, preferExternal, pr
 	}, []);
 
 	return {
-		index, events, delay, text, streams, offered, loaded: events != null,
+		index, events, delay, text, streams, offered, loading, loaded: events != null,
 		select, prepareForItem, restore, releaseIfPrimary, update, setDelay
 	};
 };
