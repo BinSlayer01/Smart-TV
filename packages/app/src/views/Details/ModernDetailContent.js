@@ -19,6 +19,7 @@ import {splitAdditionalParts} from './extraCategories';
 import {studioCardsFor, studioLogoIndex} from './studioLogos';
 import ExpandableOverview from './ExpandableOverview';
 import ModernFileInformation from './ModernFileInformation';
+import {ReviewCards} from './ReviewCard';
 import {KEYS} from '../../utils/keys';
 import {DETAIL_ICON_PATHS} from './detailIcons';
 import {iconViewBox} from '../../components/icons/iconViewBox';
@@ -79,7 +80,7 @@ const ModernDetailContent = (props) => {
 		isEpisode, isSeries, isSeason, isPerson, isBoxSet, isAlbum, isMusicArtist, isPlaylist,
 		backdropUrl, posterUrl, logoUrl, onLogoError,
 		year, runtime, endsAt, officialRating, seasonCount, genres, tagline,
-		seasons, episodes, similar, extras, cast, crew = [], nextUp, collectionItems, collectionSections = [], albumTracks, artistAlbums, playlistItems, personMovies, personSeries, birthDate, birthPlace, episodeRatings,
+		seasons, episodes, similar, reviews = [], onSelectReview, extras, cast, crew = [], nextUp, collectionItems, collectionSections = [], albumTracks, artistAlbums, playlistItems, personMovies, personSeries, birthDate, birthPlace, episodeRatings,
 		techBadges = [], techSize, overviewBackRef,
 		mediaSource, supportsMediaSourceSelection, selectedAudioIndex, selectedSubtitleIndex,
 		handleChapterSelect, handleExtraSelect, playTrack, playlistMenu,
@@ -422,9 +423,10 @@ const ModernDetailContent = (props) => {
 		if (showsDetails) list.push({id: 'details', label: $L('Details')});
 		if (collectionSections.length) list.push({id: 'collection', label: collectionTabLabel});
 		if (similar.length) list.push({id: 'similar', label: $L('More Like This')});
+		if (reviews.length) list.push({id: 'reviews', label: $L('Reviews')});
 		if (seerr.hasTabContent) list.push({id: 'seerr', label: seerr.displayName});
 		return list;
-	}, [isSeries, seasons.length, listsEpisodes, episodes.length, isPerson, personMovies.length, personSeries.length, isAlbum, isPlaylist, albumTracks.length, isMusicArtist, artistAlbums.length, isBoxSet, collectionItems.length, collectionSections.length, collectionTabLabel, cast.length, crew.length, studios, chapters, additionalParts.length, otherExtras.length, showsDetails, similar.length, seerr.hasTabContent, seerr.displayName]);
+	}, [isSeries, seasons.length, listsEpisodes, episodes.length, isPerson, personMovies.length, personSeries.length, isAlbum, isPlaylist, albumTracks.length, isMusicArtist, artistAlbums.length, isBoxSet, collectionItems.length, collectionSections.length, collectionTabLabel, cast.length, crew.length, studios, chapters, additionalParts.length, otherExtras.length, showsDetails, similar.length, reviews.length, seerr.hasTabContent, seerr.displayName]);
 
 	const [activeTab, setActiveTab] = useState(null);
 	// Expanded Tabs on keeps the first tab open and lets focus follow selection.
@@ -725,6 +727,12 @@ const ModernDetailContent = (props) => {
 				);
 			case 'similar':
 				return renderGrid(similar, 'portrait');
+			case 'reviews':
+				return (
+					<RowContainer className={css.grid}>
+						<ReviewCards reviews={reviews} onSelect={onSelectReview} />
+					</RowContainer>
+				);
 			case 'cast':
 				return renderPeople(cast);
 			case 'crew':

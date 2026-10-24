@@ -11,12 +11,13 @@ import {isMdblistEnabled} from '../../services/mdblistApi';
 import {formatTime} from '../Player/PlayerConstants';
 import {SeerrStatusBadge, SeerrDownloadBars, SeerrSeasonDot} from '../../components/seerr/SeerrStatusBadge';
 import {SeerrChips, SeerrFacts, SeerrStreaming, SeerrCollectionBanner} from '../../components/seerr/SeerrSections';
-import {SpottableDiv, RowContainer} from './detailsSpottables';
+import {SpottableDiv, RowContainer, ShortRowContainer} from './detailsSpottables';
 import ExpandableOverview from './ExpandableOverview';
 import {handleSectionKeyDown, handleScrollerFocus} from './detailsFocus';
 import {PosterBadges, WatchedCheckIcon, FavoriteHeartIcon} from './DetailBadges';
 import DetailMetadata from './DetailMetadata';
 import NextUpCard from './NextUpCard';
+import {ReviewCards} from './ReviewCard';
 import {DETAIL_METADATA, arrange} from '../../utils/detailMetadataLayout';
 import {fetchUpcomingEpisode, formatUpcomingEpisode} from '../../utils/upcomingEpisode';
 import {DETAIL_ICON_PATHS} from './detailIcons';
@@ -69,6 +70,8 @@ const ClassicDetailScreen = ({
 	cast,
 	collectionSections,
 	similar,
+	reviews = [],
+	onSelectReview,
 	onSeasonSelect,
 	onEpisodeSelect,
 	onChapterSelect,
@@ -527,6 +530,17 @@ const ClassicDetailScreen = ({
 						))}
 					</div>
 				</RowContainer>
+			)}
+
+			{reviews.length > 0 && (
+				<ShortRowContainer className={css.section}>
+					<div className={css.sectionHeader}>
+						<h3 className={css.sectionTitle}>{$L('Reviews')}</h3>
+					</div>
+					<div className={css.sectionScroll} onFocus={handleScrollerFocus}>
+						<ReviewCards reviews={reviews} onSelect={onSelectReview} />
+					</div>
+				</ShortRowContainer>
 			)}
 
 			{seerr.pieces.chips && (

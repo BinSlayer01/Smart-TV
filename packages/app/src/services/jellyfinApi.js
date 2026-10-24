@@ -666,6 +666,9 @@ export const api = {
 	getStudioCompanies: (tmdbId, mediaType) =>
 		request(`/Moonfin/Tmdb/ProductionCompanies?tmdbId=${encodeURIComponent(tmdbId)}&type=${mediaType === 'tv' ? 'tv' : 'movie'}`),
 
+	getTmdbReviews: (tmdbId, mediaType, language) =>
+		request(`/Moonfin/Tmdb/Reviews?tmdbId=${encodeURIComponent(tmdbId)}&type=${mediaType === 'tv' ? 'tv' : 'movie'}&language=${encodeURIComponent(language || 'en-US')}`),
+
 	// The plugin keeps a collection's hand-arranged order as a plain list of item ids. Without the
 	// plugin or a saved order, the caller falls back to the server's order.
 	getCollectionOrder: (collectionId) =>
@@ -1194,6 +1197,9 @@ export const createApiForServer = (serverUrl, token, userId, serverTypeOverride 
 
 		getStudioCompanies: (tmdbId, mediaType) =>
 			serverRequest(`/Moonfin/Tmdb/ProductionCompanies?tmdbId=${encodeURIComponent(tmdbId)}&type=${mediaType === 'tv' ? 'tv' : 'movie'}`),
+
+		getTmdbReviews: (tmdbId, mediaType, language) =>
+			serverRequest(`/Moonfin/Tmdb/Reviews?tmdbId=${encodeURIComponent(tmdbId)}&type=${mediaType === 'tv' ? 'tv' : 'movie'}&language=${encodeURIComponent(language || 'en-US')}`),
 
 		getCollectionOrder: (collectionId) =>
 			serverRequest(`/Moonfin/Collections/${collectionId}/Order`),

@@ -11,6 +11,7 @@ import {SpottableDiv, RowContainer} from '../detailsSpottables';
 import {DETAIL_ICON_PATHS} from '../detailIcons';
 import {iconViewBox} from '../../../components/icons/iconViewBox';
 import ModernFileInformation from '../ModernFileInformation';
+import {ReviewCards} from '../ReviewCard';
 
 import css from './SpotlightGrids.module.less';
 
@@ -163,6 +164,12 @@ const SpotlightSection = ({section, serverUrl, actions, seerr, firstSpotlightId}
 			return <StudiosGrid studios={section.studios} onSelect={actions.openStudio} firstSpotlightId={firstSpotlightId} />;
 		case 'chapters':
 			return <ChaptersGrid item={section.item} serverUrl={serverUrl} onSelect={actions.playFromChapter} firstSpotlightId={firstSpotlightId} />;
+		case 'reviews':
+			return (
+				<RowContainer className={css.grid}>
+					<ReviewCards reviews={section.reviews} onSelect={actions.openReview} firstSpotlightId={firstSpotlightId} />
+				</RowContainer>
+			);
 		case 'tracks':
 			return (
 				<DetailTrackList

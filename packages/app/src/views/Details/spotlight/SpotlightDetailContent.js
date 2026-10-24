@@ -49,7 +49,7 @@ const SpotlightDetailContent = (props) => {
 		isPerson, isEpisode, isSeries, isSeason, backdropUrl, posterUrl, logoUrl, onLogoError,
 		year, officialRating, seasonCount, genres = [], tagline, techBadges = [], techSize,
 		overviewBackRef, episodes = [], seriesEpisodes = [], birthDate, birthPlace,
-		effectiveApi, serverToken, seasons = [], similar = [], similarSource, extras = [], cast = [], crew = [],
+		effectiveApi, serverToken, seasons = [], similar = [], similarSource, reviews = [], onSelectReview, extras = [], cast = [], crew = [],
 		nextUp = [], collectionItems = [], missingCollectionItems = [], parentCollections = [],
 		albumTracks = [], artistAlbums = [], playlistItems = [], personMovies = [], personSeries = [],
 		filmography, loadMoreCollectionItems, collectionMenu,
@@ -136,7 +136,7 @@ const SpotlightDetailContent = (props) => {
 
 	const cardState = useMemo(() => ({
 		item, serverUrl: effectiveServerUrl, settings, showsSection, seerrOnly, mediaSource,
-		seasons, episodes, seriesEpisodes, similar, similarSource, extras, cast, crew, nextUp,
+		seasons, episodes, seriesEpisodes, similar, similarSource, reviews, extras, cast, crew, nextUp,
 		collectionItems, missingCollectionItems, parentCollections,
 		albumTracks, artistAlbums, playlistItems,
 		personMovies, personSeries, filmography: otherCredits,
@@ -154,7 +154,7 @@ const SpotlightDetailContent = (props) => {
 		},
 		fallbackImageUrl: cardFallbackImageUrl
 	}), [
-		item, effectiveServerUrl, settings, showsSection, seerrOnly, mediaSource, seasons, episodes, seriesEpisodes, similar, similarSource,
+		item, effectiveServerUrl, settings, showsSection, seerrOnly, mediaSource, seasons, episodes, seriesEpisodes, similar, similarSource, reviews,
 		extras, cast, crew, nextUp, collectionItems, missingCollectionItems, parentCollections,
 		albumTracks, artistAlbums, playlistItems, personMovies, personSeries, otherCredits,
 		seerrCredits, studioCards, canManagePlaylist, cardFallbackImageUrl,
@@ -167,6 +167,7 @@ const SpotlightDetailContent = (props) => {
 		openSeerrItem: onSelectSeerrCard,
 		openPerson: onSelectPerson,
 		openStudio: onSelectStudio,
+		openReview: onSelectReview,
 		playFromChapter: handleChapterSelect,
 		playExtra: handleExtraSelect,
 		playTrack,
@@ -180,7 +181,7 @@ const SpotlightDetailContent = (props) => {
 		selectedAudioIndex,
 		selectedSubtitleIndex
 	}), [
-		onSelectItem, onSelectSeerrCard, onSelectPerson, onSelectStudio, handleChapterSelect,
+		onSelectItem, onSelectSeerrCard, onSelectPerson, onSelectStudio, onSelectReview, handleChapterSelect,
 		handleExtraSelect, playTrack, playlistMenu, onReorderPlaylistItem, onRemovePlaylistItem,
 		loadMoreCollectionItems, collectionMenu,
 		effectiveApi, settings, selectedAudioIndex, selectedSubtitleIndex

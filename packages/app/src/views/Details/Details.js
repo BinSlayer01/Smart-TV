@@ -39,6 +39,7 @@ import {COLLECTION_ITEM_TYPES, IDENTIFIABLE_TYPES, getMediaBadges, seriesThumbUr
 import useDetailsItem from './useDetailsItem';
 import useDetailsModals from './useDetailsModals';
 import useDetailsTrailer from './useDetailsTrailer';
+import useDetailsReviews from './useDetailsReviews';
 import useSeerrOverlay from './useSeerrOverlay';
 import DetailScrollPage from './DetailScrollPage';
 import DetailBackdrop from './DetailBackdrop';
@@ -48,6 +49,7 @@ import DetailDialogs from './DetailDialogs';
 import SeerrDialogs from './SeerrDialogs';
 import TrailerOverlay from './TrailerOverlay';
 import TrailerPicker from './TrailerPicker';
+import ReviewDialog from './ReviewDialog';
 import PersonalRatingDialog from '../../components/PersonalRatingDialog';
 import {clampRating, clearedRatingPatch, isRatableItemType, normalizeRatingStyle, numericRatingPatch, thumbRatingPatch} from '../../utils/personalRating';
 import {personDateLines, splitFilmography} from '../../utils/personCredits';
@@ -204,7 +206,8 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 	const overviewBackRef = useRef(null);
 	const spotlightBackRef = useRef(null);
 	const trailerBackRef = useRef(null);
-	const modals = useDetailsModals({backHandlerRef, onArtworkClosed: refreshItem, seerrBackRef, overviewBackRef, spotlightBackRef, trailerBackRef});
+	const reviewBackRef = useRef(null);
+	const modals = useDetailsModals({backHandlerRef, onArtworkClosed: refreshItem, seerrBackRef, overviewBackRef, spotlightBackRef, trailerBackRef, reviewBackRef});
 	const {activeModal, openModal, closeModal, advancedResumeRef} = modals;
 
 	const trailer = useDetailsTrailer({
@@ -216,6 +219,14 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 		captionLanguage: settings.uiLanguage,
 		seerrOnly,
 		backRef: trailerBackRef
+	});
+
+	// An older plugin has no reviews route, and its ping says so.
+	const reviews = useDetailsReviews({
+		item,
+		effectiveApi,
+		enabled: settings.useMoonfinPlugin === true && pluginInfo?.tmdbReviewsSupported === true && showsSection('reviews'),
+		backRef: reviewBackRef
 	});
 
 	const canChangeArtwork = useMemo(() => {
@@ -1094,6 +1105,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 				onClose={modals.handleCloseRatingDialog}
 			/>
 			<SeerrDialogs seerr={seerr} title={item.Name} />
+			<ReviewDialog review={reviews.openReview} onClose={reviews.handleCloseReview} />
 		</>
 	);
 
@@ -1195,6 +1207,8 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 					onSelectStudio={onSelectStudio}
 					similarSource={similarSource}
 					similarLoaded={shownSimilarLoaded}
+					reviews={reviews.reviews}
+					onSelectReview={reviews.handleSelectReview}
 					missingCollectionItems={missingCollectionItems}
 					parentCollections={shownParentCollections}
 					loadMoreCollectionItems={loadMoreCollectionItems}
@@ -1427,6 +1441,8 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 				crew={detailCrew}
 				collectionSections={collectionSections}
 				similar={shownSimilar}
+				reviews={reviews.reviews}
+				onSelectReview={reviews.handleSelectReview}
 				onSeasonSelect={handleSeasonSelect}
 				onEpisodeSelect={handleEpisodeSelect}
 				onChapterSelect={handleChapterSelect}

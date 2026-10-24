@@ -10,6 +10,7 @@ export const SECTION_CHAPTERS = 'chapters';
 export const SECTION_PARTS = 'additionalParts';
 export const SECTION_EXTRAS = 'extras';
 export const SECTION_DISCOVERY = 'discovery';
+export const SECTION_REVIEWS = 'reviews';
 export const SECTION_PEOPLE = 'people';
 export const SECTION_DETAILS = 'details';
 
@@ -60,7 +61,8 @@ export const nouveauSectionOrder = (state = {}) => {
 		partCount = 0,
 		extraCount = 0,
 		actorCount = 0,
-		directorCount = 0
+		directorCount = 0,
+		reviewCount = 0
 	} = state;
 
 	const sections = [];
@@ -70,6 +72,7 @@ export const nouveauSectionOrder = (state = {}) => {
 	if (partCount > 0) sections.push(SECTION_PARTS);
 	if (shouldIncludeExtras(extraCount)) sections.push(SECTION_EXTRAS);
 	if (shouldIncludeDiscovery(state)) sections.push(SECTION_DISCOVERY);
+	if (reviewCount > 0) sections.push(SECTION_REVIEWS);
 	if (shouldIncludePeople({actorCount, directorCount})) sections.push(SECTION_PEOPLE);
 	sections.push(SECTION_DETAILS);
 	return sections;

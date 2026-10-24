@@ -21,6 +21,7 @@ export const CARD_ICONS = {
 	people: MATERIAL_ICON_PATHS.groups,
 	chaptersExtras: MATERIAL_ICON_PATHS.video_library,
 	similar: MATERIAL_ICON_PATHS.star_shine,
+	reviews: MATERIAL_ICON_PATHS.rate_review,
 	collections: DETAIL_ICON_PATHS.collection,
 	episodes: DETAIL_ICON_PATHS.series,
 	tracks: MATERIAL_ICON_PATHS.queue_music,
@@ -111,7 +112,8 @@ class CardBuilder {
 			return {
 				seerr_details: () => this.seerrDetailsCard(),
 				people: () => this.peopleCard(),
-				similar: () => this.similarCard()
+				similar: () => this.similarCard(),
+				reviews: () => this.reviewsCard()
 			};
 		}
 		switch (item?.Type) {
@@ -120,6 +122,7 @@ class CardBuilder {
 				people: () => this.peopleCard(),
 				chapters_extras: () => this.chaptersExtrasCard(),
 				similar: () => this.similarCard(),
+				reviews: () => this.reviewsCard(),
 				collections: () => this.collectionsCard()
 			};
 			case 'Season': return {
@@ -150,6 +153,7 @@ class CardBuilder {
 				people: () => this.peopleCard(),
 				chapters_extras: () => this.chaptersExtrasCard(),
 				similar: () => this.similarCard(),
+				reviews: () => this.reviewsCard(),
 				collections: () => this.collectionsCard(),
 				file_details: () => this.fileDetailsCard()
 			};
@@ -288,6 +292,20 @@ class CardBuilder {
 				...(recommendations.length ? [seerrSection($L('Recommendations (Seerr)'), recommendations)] : []),
 				...(seerrSimilar.length ? [seerrSection(similar.length ? $L('Similar (Seerr)') : $L('Similar'), seerrSimilar)] : [])
 			])
+		};
+	}
+
+	// Only films and shows are handed any, so the other types never get the card.
+	reviewsCard() {
+		const {reviews = [], fallbackImageUrl} = this.s;
+		if (!reviews.length) return null;
+		return {
+			id: 'reviews',
+			title: $L('Reviews'),
+			subtitle: countLabel(reviews.length, $L('1 review'), $L('{count} reviews')),
+			imageUrl: fallbackImageUrl,
+			icon: CARD_ICONS.reviews,
+			sections: [{kind: 'reviews', reviews}]
 		};
 	}
 
