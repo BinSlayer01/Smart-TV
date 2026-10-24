@@ -71,6 +71,7 @@ const GameDetails = ({library, gameId, initialGame, onPlay, onSelectGame, backHa
 	const [saveReadiness, setSaveReadiness] = useState('checking');
 	const saveCheck = useRef(0);
 	const [related, setRelated] = useState([]);
+	const [relatedAspects, setRelatedAspects] = useState(null);
 	// Why this game can't run here, shown in place of starting it.
 	const [unsupported, setUnsupported] = useState(null);
 	const [corePickerOpen, setCorePickerOpen] = useState(false);
@@ -112,6 +113,9 @@ const GameDetails = ({library, gameId, initialGame, onPlay, onSelectGame, backHa
 				gamesApi.getGames(libraryId, g.system).then((all) => {
 					if (cancelled) return;
 					setRelated((all || []).filter((x) => x.id !== g.id).slice(0, 20));
+				});
+				gamesApi.getBoxArtAspects(libraryId, g.system).then((found) => {
+					if (!cancelled) setRelatedAspects(found);
 				});
 			}
 		}).catch(() => {
@@ -262,7 +266,7 @@ const GameDetails = ({library, gameId, initialGame, onPlay, onSelectGame, backHa
 					<div className={css.relatedTitle}>{$L('More in {system}').replace('{system}', game.system)}</div>
 					<div className={css.relatedRow}>
 						{related.map((g) => (
-							<GameCard key={g.id} game={g} artUrl={gamesApi.gameThumbUrl(libraryId, g.id)} width={150} onSelect={openRelated} />
+							<GameCard key={g.id} game={g} artUrl={gamesApi.gameThumbUrl(libraryId, g.id)} aspect={relatedAspects?.get(g.id)} width={150} onSelect={openRelated} />
 						))}
 					</div>
 				</div>

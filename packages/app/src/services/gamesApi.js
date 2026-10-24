@@ -59,6 +59,37 @@ export const gameThumbUrl = (libraryId, gameId, kind = 'boxart') => {
 	return `${base()}/Moonfin/Games/${enc(libraryId)}/Thumb/${enc(gameId)}?type=${enc(kind)}${auth}`;
 };
 
+// Whether the server sends box art sizes, asked once per server and sign-in. A failed answer
+// counts as no.
+let artworkSizesLookup = null;
+
+const reportsArtworkSizes = () => {
+	const key = `${base()}|${getApiKey()}`;
+	if (!artworkSizesLookup || artworkSizesLookup.key !== key) {
+		const supported = jsonRequest('ArtworkCapabilities').then(
+			(caps) => caps?.protocolVersion >= 3 && caps.manifest === true && caps.versionedAssets === true && caps.dimensions === true,
+			() => false
+		);
+		artworkSizesLookup = {key, supported};
+	}
+	return artworkSizesLookup.supported;
+};
+
+// Box art width over height by game id, or null when the server doesn't send sizes. A manifest
+// that can't be read gives an empty map.
+export const getBoxArtAspects = async (libraryId, system) => {
+	if (!libraryId || !system || !(await reportsArtworkSizes())) return null;
+	const aspects = new Map();
+	try {
+		const manifest = await jsonRequest(`${enc(libraryId)}/ArtworkManifest?system=${enc(system)}`);
+		(manifest?.entries || []).forEach((entry) => {
+			const boxart = entry?.artwork?.boxart;
+			if (boxart?.width > 0 && boxart?.height > 0) aspects.set(entry.gameId, boxart.width / boxart.height);
+		});
+	} catch (e) { /* no sizes this time */ }
+	return aspects;
+};
+
 // The largest ROM a TV will take. Buffering is what kills it, since the response, the Blob and
 // the copy EmulatorJS keeps all sit in the WebView heap at once and past this the app is killed
 // part-way through loading. Measured on a device rather than taken from a published limit, so

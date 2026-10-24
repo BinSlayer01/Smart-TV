@@ -284,3 +284,36 @@ describe('getRommAccount', () => {
 		expect(platformFetch.mock.calls[platformFetch.mock.calls.length - 1][0]).toBe('https://server/Moonfin/Games/Romm/Account');
 	});
 });
+
+describe('getBoxArtAspects', () => {
+	// Each test signs in with its own token, since the server's answer is kept per sign-in.
+	const json = (body) => ({ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(body))});
+	const caps = {protocolVersion: 3, manifest: true, versionedAssets: true, dimensions: true};
+
+	test('reads each box art size from the system manifest', async () => {
+		const {platformFetch} = require('./secureFetch');
+		const {getBoxArtAspects} = require('./gamesApi');
+		mockToken = 'sizes';
+		platformFetch.mockResolvedValueOnce(json(caps)).mockResolvedValueOnce(json({entries: [
+			{gameId: 'smb3', artwork: {boxart: {state: 'thumbnailReady', width: 512, height: 731}}},
+			{gameId: 'pending', artwork: {boxart: {state: 'pending'}}}
+		]}));
+
+		const aspects = await getBoxArtAspects('lib', 'NES');
+
+		expect(platformFetch.mock.calls[platformFetch.mock.calls.length - 1][0]).toBe('https://server/Moonfin/Games/lib/ArtworkManifest?system=NES');
+		expect(aspects.get('smb3')).toBeCloseTo(512 / 731);
+		expect(aspects.has('pending')).toBe(false);
+	});
+
+	test('a server that sends no sizes gets no manifest request', async () => {
+		const {platformFetch} = require('./secureFetch');
+		const {getBoxArtAspects} = require('./gamesApi');
+		mockToken = 'no-sizes';
+		platformFetch.mockClear();
+		platformFetch.mockResolvedValueOnce(json({...caps, protocolVersion: 2, dimensions: false}));
+
+		await expect(getBoxArtAspects('lib', 'NES')).resolves.toBeNull();
+		expect(platformFetch).toHaveBeenCalledTimes(1);
+	});
+});

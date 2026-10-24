@@ -37,7 +37,7 @@ jest.mock('../../utils/spotlightContainers', () => {
 	const React = require('react');
 	return {ModalContainer: ({className, children, onClick}) => React.createElement('div', {className, onClick}, children)};
 });
-jest.mock('../../services/gamesApi', () => ({getGame: jest.fn(), getGames: jest.fn(), gameThumbUrl: () => null, setGameCoreOverride: jest.fn()}));
+jest.mock('../../services/gamesApi', () => ({getGame: jest.fn(), getGames: jest.fn(), getBoxArtAspects: () => Promise.resolve(null), gameThumbUrl: () => null, setGameCoreOverride: jest.fn()}));
 jest.mock('../../utils/gameSaves', () => ({loadGameStateWithMigration: jest.fn()}));
 jest.mock('../../utils/emulatorjs', () => ({isSupported: () => true, needsThreads: (core) => core === 'psp', unsupportedMessage: () => ''}));
 jest.mock('../../utils/scrimImage', () => ({scrimStyle: () => null}));

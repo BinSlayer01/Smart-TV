@@ -7,7 +7,7 @@ import {useAuth} from '../../context/AuthContext';
 import {useSettings} from '../../context/SettingsContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {formatClockTime, formatDayLabel} from '../../utils/clock';
-import {KEYS} from '../../utils/keys';
+import {KEYS, pageDirection} from '../../utils/keys';
 import {animateScrollTop, pointerHover, stopScrollAnimation} from '../../utils/focusScroll';
 import {rem, rootScale} from '../../utils/rootScale';
 import {createLiveTvGuideStore} from '../../services/liveTvGuideStore';
@@ -75,15 +75,6 @@ const REANCHOR_INPUT_QUIET_MS = 1000;
 
 const WINDOW_BAR_PREVIOUS = 0;
 const WINDOW_BAR_LAST = 5;
-
-// Fast forward and rewind, and the track and page keys a remote may carry, page the rows.
-const PAGE_FORWARD_KEYS = [KEYS.FAST_FORWARD || 417, 425, 10233, 34];
-const PAGE_BACK_KEYS = [KEYS.REWIND || 412, 424, 10232, 33];
-const pageDirection = (keyCode) => {
-	if (PAGE_FORWARD_KEYS.indexOf(keyCode) >= 0) return 1;
-	if (PAGE_BACK_KEYS.indexOf(keyCode) >= 0) return -1;
-	return 0;
-};
 
 const SORT_LABELS = {number: 'Channel Number', name: 'Name', favoritesFirst: 'Favorites First'};
 const normalizeSort = (value) => (CHANNEL_SORTS.indexOf(value) >= 0 ? value : 'number');
