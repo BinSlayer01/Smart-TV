@@ -204,11 +204,34 @@ const useBrowseData = ({
 		memoryCache.owner = owner;
 	}, [owner]);
 
+	// A new random set for the media bar, drawn while the current one stays up and kept if the draw
+	// fails. A press while one is on its way is dropped. The rows that change refresh too.
+	const drawingRef = useRef(false);
+	const drawNewMediaBar = async () => {
+		refreshVolatileData(true);
+		if (drawingRef.current || settingsRef.current.featuredBarStyle === 'off') return;
+		drawingRef.current = true;
+		const current = memoryCache.featuredItems;
+		memoryCache.featuredItems = null;
+		try {
+			if (!(await fetchFreshFeaturedItems(current))) memoryCache.featuredItems = current;
+		} finally {
+			drawingRef.current = false;
+		}
+	};
+	const drawNewMediaBarRef = useRef(drawNewMediaBar);
+	drawNewMediaBarRef.current = drawNewMediaBar;
+
 	useEffect(() => {
 		// detail.featured marks refreshes that change what the bar may hold, like hiding a library.
 		// detail.libraries marks a change to the libraries themselves, like their order, which has
 		// to show straight away, so the stored rows go too and the rows are asked for again.
+		// detail.newMediaBar is Home pressed while Home is showing.
 		const handleBrowseRefresh = (e) => {
+			if (e?.detail?.newMediaBar) {
+				drawNewMediaBarRef.current();
+				return;
+			}
 			clearMemoryCache({keepFeatured: !e?.detail?.featured});
 			if (e?.detail?.libraries) clearBrowseCache().then(() => setReloadKey((key) => key + 1));
 		};

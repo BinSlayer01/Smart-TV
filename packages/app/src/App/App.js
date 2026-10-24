@@ -1344,6 +1344,15 @@ const AppContent = (props) => {
 		setPanelIndex(PANELS.BROWSE);
 	}, []);
 
+	// Home pressed in the navigation while Home is showing draws a new media bar set.
+	const handleNavHome = useCallback(() => {
+		if (panelIndex === PANELS.BROWSE) {
+			window.dispatchEvent(new CustomEvent('moonfin:browseRefresh', {detail: {newMediaBar: true}}));
+			return;
+		}
+		handleHome();
+	}, [panelIndex, handleHome]);
+
 	const showRemoteMessage = useCallback((text, header) => {
 		setRemoteMessage({key: Date.now(), title: header?.trim() || $L('Remote message'), body: text});
 	}, []);
@@ -1699,7 +1708,7 @@ const AppContent = (props) => {
 				<Sidebar
 					libraries={libraries}
 					hasLiveTv={hasLiveTv}
-					onHome={handleHome}
+					onHome={handleNavHome}
 					onSearch={handleOpenSearch}
 					onShuffle={handleShuffle}
 					onGenres={handleOpenGenres}
@@ -1720,7 +1729,7 @@ const AppContent = (props) => {
 					activeView={getActiveView()}
 					libraries={libraries}
 					hasLiveTv={hasLiveTv}
-					onHome={handleHome}
+					onHome={handleNavHome}
 					onSearch={handleOpenSearch}
 					onShuffle={handleShuffle}
 					onGenres={handleOpenGenres}

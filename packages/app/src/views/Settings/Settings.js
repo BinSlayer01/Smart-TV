@@ -53,7 +53,7 @@ import FriendsScreens, {FRIENDS_VIEWS} from './friends/FriendsScreens';
 import {isConfirmSpendOpen} from './achievements/ConfirmSpendDialog';
 import {kidsModeNeedsPin} from '../../utils/kidsMode';
 import {sortRatingsBySeverity} from '../../utils/parentalFilter';
-import {isPickedRow} from '../../utils/pickedRows';
+import {isPickedRow, isSeerrSliderRow} from '../../utils/pickedRows';
 import {readServerRatings} from './serverRatings';
 import {getBlockedRatings, setBlockedRatings} from '../../services/parentalControls';
 import useParentalFilter from '../../hooks/useParentalFilter';
@@ -728,7 +728,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 
 	const {
 		tempHomeRows, loading: homeRowsLoading, serverHasLiveTv,
-		toggleHomeRowEnabled, toggleSeerrHomeRow, openHomeRows, commitHomeRows, resetHomeRows,
+		toggleHomeRowEnabled, toggleSeerrHomeRow, toggleSeerrSlider, openHomeRows, commitHomeRows, resetHomeRows,
 		toggleHomeRow, moveHomeRow
 	} = useHomeRowsEditor({api, serverUrl, servers, settings, updateSetting, updateSettings, pushView});
 
@@ -1393,6 +1393,9 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 					seerrLabel={seerrLabel}
 					enabledMap={homeRowEnabledMap}
 					onToggleRow={toggleSeerrHomeRow}
+					homeRows={settings.homeRows}
+					serverUrl={serverUrl}
+					onToggleSlider={toggleSeerrSlider}
 				/>
 			)}
 			{viewName === 'imdbLists' && (
@@ -1457,7 +1460,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			)}
 			{viewName === 'rowImageTypes' && (
 				<RowImageTypesView
-					rows={(settings.homeRows || []).filter((row) => row.enabled && row.id !== 'librarybuttons' && !isPickedRow(row))}
+					rows={(settings.homeRows || []).filter((row) => row.enabled && row.id !== 'librarybuttons' && !isPickedRow(row) && !isSeerrSliderRow(row))}
 					overrides={settings.homeRowImageTypes || {}}
 					globalLabel={getLabel(getImageTypeOptions(), settings.homeRowsImageType, $L('Poster'))}
 					onCycleRow={cycleRowImageType}
