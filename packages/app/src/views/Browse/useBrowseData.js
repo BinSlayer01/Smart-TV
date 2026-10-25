@@ -8,7 +8,7 @@ import {getLogoUrl} from '../../utils/helpers';
 import * as connectionPool from '../../services/connectionPool';
 import * as seerrApi from '../../services/seerrApi';
 import browseReducer, {browseInitialState, mergeRowsById} from './browseReducer';
-import {BROWSE_ROW_LOADERS, buildLoaderContext} from './browseRowLoaders';
+import {BROWSE_ROW_LOADERS, buildLoaderContext, loadDeferredSections, loadSinceYouWatched} from './browseRowLoaders';
 import {genericCollectionLabel, mergeRecentRows} from '../../utils/mergeRecentRows';
 import {normalizeLatestMediaItems} from '../../utils/latestMediaRowNormalizer';
 import {EXCLUDED_COLLECTION_TYPES, filterItemsByExcludedGenres} from './browseFilters';
@@ -53,6 +53,16 @@ const useBrowseData = ({
 
 	const settingsRef = useRef(settings);
 	settingsRef.current = settings;
+
+	const recommendations = useMemo(
+		() => ({seerrEnabled, seerrAuthenticated, recommendationsSupported}),
+		[seerrEnabled, seerrAuthenticated, recommendationsSupported]
+	);
+	const recommendationsRef = useRef(recommendations);
+	recommendationsRef.current = recommendations;
+	const loaderContextRef = useRef(null);
+	// The picked rows waiting for Home to come near them, and the load they belong to.
+	const deferredRef = useRef(null);
 
 	const fetchFreshFeaturedItems = useCallback(async (fallbackItems = null) => {
 		const s = settingsRef.current;
@@ -244,11 +254,21 @@ const useBrowseData = ({
 
 	useEffect(() => cancelPendingCacheSave, []);
 
-	// Only the "since you watched" rows read the Seerr state, and it settles a moment after launch,
-	// so Home only loads again for it when one of those rows is on.
-	const recommendationState = homeRowsConfig.some((row) => row.enabled && row.id.startsWith('sinceyouwatched'))
-		? `${seerrEnabled}|${seerrAuthenticated}|${recommendationsSupported}`
-		: '';
+	// Only the Since you watched rows read the Seerr state, and it settles a moment after launch,
+	// so those rows are all that load again when it does.
+	useEffect(() => {
+		if (loaderContextRef.current) loadSinceYouWatched(loaderContextRef.current);
+	}, [recommendations]);
+
+	const loadSectionsNear = useCallback((rowIds) => {
+		const deferred = deferredRef.current;
+		const due = deferred ? rowIds.map((id) => deferred.sections.get(id)).filter(Boolean) : [];
+		if (due.length === 0) return;
+		due.forEach((section) => deferred.sections.delete(section.id));
+		loadDeferredSections(deferred.ctx, due, (id) => {
+			if (deferredRef.current === deferred) dispatch({type: 'SECTIONS_DONE', sections: [id]});
+		});
+	}, []);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -271,6 +291,8 @@ const useBrowseData = ({
 		};
 
 		const loadData = async () => {
+			loaderContextRef.current = null;
+			deferredRef.current = null;
 			dispatch({type: 'SET_PENDING_SECTIONS', sections: []});
 			// Recommendation rows are only built by fetchAllData, so treat an enabled one
 			// as dynamic config. Otherwise enabling it shows nothing until the cache expires.
@@ -541,14 +563,14 @@ const useBrowseData = ({
 					settings,
 					homeRowsConfig,
 					eligibleLibraries,
-					seerrEnabled,
-					seerrAuthenticated,
-					recommendationsSupported,
+					recommendations: () => recommendationsRef.current,
 					appendRows
 				});
 				const loaderSections = BROWSE_ROW_LOADERS.map(({sections}) => sections(loaderContext));
 				if (!cancelled) {
-					dispatch({type: 'SET_PENDING_SECTIONS', sections: [].concat(...loaderSections)});
+					loaderContextRef.current = loaderContext;
+					deferredRef.current = {ctx: loaderContext, sections: new Map(loaderContext.deferredPluginSections.map((section) => [section.id, section]))};
+					dispatch({type: 'SET_PENDING_SECTIONS', sections: [].concat(...loaderSections, [...deferredRef.current.sections.keys()])});
 				}
 				dispatch({type: 'SET_LOADING', value: false});
 				if (!cancelled) {
@@ -608,7 +630,6 @@ const useBrowseData = ({
 		settings.sinceYouWatchedSourceType,
 		settings.sinceYouWatchedIncludeWatched,
 		settings.tmdbApiKey,
-		recommendationState,
 		settings.rewatchIncludeMovies,
 		settings.rewatchIncludeShows,
 		settings.rewatchIncludeCollections,
@@ -631,7 +652,8 @@ const useBrowseData = ({
 		pendingSections: state.pendingSections,
 		setBrowseMode,
 		fetchFreshFeaturedItems,
-		refreshVolatileData
+		refreshVolatileData,
+		loadSectionsNear
 	};
 };
 
