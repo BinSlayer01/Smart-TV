@@ -13,6 +13,9 @@ import {genericCollectionLabel, mergeRecentRows} from '../../utils/mergeRecentRo
 import {normalizeLatestMediaItems} from '../../utils/latestMediaRowNormalizer';
 import {EXCLUDED_COLLECTION_TYPES, filterItemsByExcludedGenres} from './browseFilters';
 import {featuredConfigKey} from './featuredConfig';
+import {readFeaturedSources} from './featuredSources';
+import {shuffleArray} from '../Details/detailsMedia';
+import {withoutBlockedItems} from '../../services/parentalControls';
 import {
 	CACHE_TTL_LIBRARIES, CACHE_TTL_VOLATILE, VOLATILE_REFRESH_COOLDOWN_MS,
 	cancelPendingCacheSave, clearBrowseCache, clearMemoryCache, isCacheValid, loadBrowseCache, memoryCache, saveBrowseCache
@@ -94,28 +97,19 @@ const useBrowseData = ({
 			}
 
 			if (items.length === 0) {
+				const count = s.featuredItemCount;
+				// What the bar can show: a title with a backdrop that no setting keeps off it.
+				const isUsable = (item) => item.Type !== 'BoxSet' && item.BackdropImageTags?.length > 0 &&
+					filterItemsByExcludedGenres([item], s.excludedGenres).length > 0 && withoutBlockedItems([item]).length > 0;
+				const pickFrom = (pool) => shuffleArray(pool.filter(isUsable)).slice(0, count);
 				if (sourceType === 'collection' && collectionIds.length > 0) {
-					const results = await Promise.all(
-						collectionIds.map(cid => api.getCollectionItems(cid, 50).catch(() => null))
-					);
-					const allItems = [];
-					results.forEach(r => { if (r?.Items) allItems.push(...r.Items); });
-					items = allItems
-						.filter(item => item.Type !== 'BoxSet' && item.BackdropImageTags?.length)
-						.sort(() => Math.random() - 0.5)
-						.slice(0, s.featuredItemCount);
+					items = pickFrom(await readFeaturedSources(collectionIds, (cid) => api.getCollectionItems(cid, 50), isUsable, count));
 				} else if (unifiedMode) {
-					items = await connectionPool.getRandomItemsFromAllServers(s.featuredContentType, s.featuredItemCount, libraryIds);
+					items = await connectionPool.getRandomItemsFromAllServers(s.featuredContentType, count, libraryIds);
 				} else if (libraryIds.length > 0) {
-					const perLib = Math.ceil((s.featuredItemCount * 2) / libraryIds.length);
-					const results = await Promise.all(
-						libraryIds.map(lid => api.getRandomItems(s.featuredContentType, perLib, lid).catch(() => null))
-					);
-					const allItems = [];
-					results.forEach(r => { if (r?.Items) allItems.push(...r.Items); });
-					items = allItems.sort(() => Math.random() - 0.5).slice(0, s.featuredItemCount);
+					items = pickFrom(await readFeaturedSources(libraryIds, (lid) => api.getRandomItems(s.featuredContentType, count * 2, lid), isUsable, count));
 				} else {
-					const randomItems = await api.getRandomItems(s.featuredContentType, s.featuredItemCount);
+					const randomItems = await api.getRandomItems(s.featuredContentType, count);
 					items = randomItems?.Items || [];
 				}
 			}
