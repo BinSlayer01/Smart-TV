@@ -85,6 +85,10 @@ const FAVORITE_ITEMS = 'favoriteItems';
 
 const FOLDER_DETAIL_TYPES = ['Series', 'BoxSet', 'Playlist', 'MusicAlbum', 'MusicArtist'];
 
+// The plain folders a folder view lists ahead of everything else. The server counts a series as a
+// folder too, so sorting on IsFolder would put every show ahead of every movie.
+const DIRECTORY_TYPES = 'Folder,CollectionFolder,UserView,PhotoAlbum';
+
 // The inset the stylesheet keeps either side of the grid, both sides added up.
 const GRID_INSET = 174;
 // The Docked panel's width, matched in the stylesheet. The grid keeps its own inset beside it.
@@ -303,6 +307,8 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 
 	const loadingMoreRef = useRef(false);
 	const apiFetchIndexRef = useRef(0);
+	// How many plain folders lead a folder view, which the item pages start after.
+	const directoryCountRef = useRef(0);
 	const initialFocusDoneRef = useRef(false);
 	const loadItemsRef = useRef(null);
 	const fetchGenerationRef = useRef(0);
@@ -473,26 +479,38 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 			});
 
 			if (isFolderView) {
-				const params = {
+				const shared = {
 					ParentId: currentFolderId,
-					StartIndex: startIndex,
-					Limit: 150,
-					SortBy: `IsFolder,${sortOption.field}`,
 					SortOrder: effectiveOrder,
-					EnableTotalRecordCount: true,
-					Fields: 'PrimaryImageAspectRatio,SortName,Path,ChildCount,MediaSourceCount,ProductionYear,ImageTags,OfficialRating,CommunityRating,CriticRating,RunTimeTicks,UserData'
+					Fields: 'PrimaryImageAspectRatio,SortName,Path,ChildCount,MediaSourceCount,ProductionYear,ImageTags,OfficialRating,CommunityRating,CriticRating,RunTimeTicks,UserData',
+					...(filters.length > 0 ? {Filters: filters.join(',')} : {}),
+					...extraParams
 				};
-				if (filters.length > 0) params.Filters = filters.join(',');
-				Object.assign(params, extraParams);
-				const result = await effectiveApi.getItems(params);
+				const firstPage = startIndex === 0;
+				const [result, directories] = await Promise.all([
+					effectiveApi.getItems({
+						...shared,
+						StartIndex: firstPage ? 0 : startIndex - directoryCountRef.current,
+						Limit: 150,
+						SortBy: sortOption.field,
+						ExcludeItemTypes: DIRECTORY_TYPES,
+						EnableTotalRecordCount: true
+					}),
+					firstPage ? effectiveApi.getItems({...shared, SortBy: 'SortName', IncludeItemTypes: DIRECTORY_TYPES, EnableTotalRecordCount: false}) : null
+				]);
 				let newItems = result.Items || [];
 				if (currentFolderCollectionType === 'movies' || currentFolderCollectionType === 'tvshows') {
 					newItems = newItems.filter(i => i.Type !== 'BoxSet');
 				}
 				if (generation !== fetchGenerationRef.current) return;
+				if (firstPage) {
+					const folders = directories?.Items || [];
+					directoryCountRef.current = folders.length;
+					newItems = folders.concat(newItems);
+				}
 				apiFetchIndexRef.current = append ? apiFetchIndexRef.current + newItems.length : newItems.length;
 				showPage(newItems);
-				setTotalCount(result.TotalRecordCount || 0);
+				setTotalCount((result.TotalRecordCount || 0) + directoryCountRef.current);
 			} else {
 				const params = {
 					StartIndex: startIndex,
