@@ -327,10 +327,7 @@ export const defaultSettings = {
 	recommendationSystemSource: null,
 	recommendationsApplyParentalRatingCap: null,
 	performanceMode: 'auto',
-	// Which keyboard a text field opens. The synced profile keeps one value for every
-	// client, and a phone wants the opposite answer a TV does, so this stays local
-	// instead of letting a handset decide how the TV types.
-	preferSystemImeKeyboard: false,
+	keyboardStyle: 'docked',
 	focusBorderColor: '',
 	navbarOpacity: 50,
 	navbarColor: 'gray',

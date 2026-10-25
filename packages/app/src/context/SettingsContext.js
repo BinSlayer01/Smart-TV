@@ -187,6 +187,7 @@ const VALUE_CONVERSIONS = {
 	libraryStyle: oneOf(['classic', 'modern', 'docked']),
 	bookLibraryStyle: oneOf(['classic', 'readingRoom', 'bookstore']),
 	musicLibraryStyle: oneOf(['classic', 'quickAccess', 'immersive']),
+	keyboardStyle: oneOf(['native', 'classic', 'glass', 'docked']),
 	seasonalRowCountry: {fromServer: normalizeSeasonalRowCountry},
 	seasonalRowHiddenHolidays: {fromServer: normalizeSeasonalHiddenHolidays},
 	screensaverContentType: {
@@ -291,6 +292,7 @@ export const SYNCABLE_KEYS = [
 	'hideDetailsMediaDescription', 'detailUseSeriesThumbnails', 'hideHomeMediaDescription',
 	'personalRatingStyle', 'recentlyReleasedSeriesType', 'mergeRecentRowsByType', 'playlistsGroupByType', 'groupItemsIntoCollections',
 	'useDetailedSubHeadings', 'showMediaDetailsOnLibraryPage', 'hideBackdropsInLibraries', 'libraryStyle', 'bookLibraryStyle', 'musicLibraryStyle',
+	'keyboardStyle',
 	'syncplayEnabled', 'syncplayAutoOpen',
 	'showSyncPlayButton',
 	'syncPlayAdvancedCorrectionEnabled', 'syncPlayEnableSyncCorrection',
@@ -588,6 +590,15 @@ const persistBootLocale = (locale) => {
 	}
 };
 
+// The old Prefer System Keyboard switch carries over only when it was on and no
+// keyboard style has been picked yet.
+export const migrateKeyboardStyle = (stored) => {
+	if (!('preferSystemImeKeyboard' in stored)) return false;
+	if (stored.preferSystemImeKeyboard === true && !('keyboardStyle' in stored)) stored.keyboardStyle = 'native';
+	delete stored.preferSystemImeKeyboard;
+	return true;
+};
+
 export function SettingsProvider({children}) {
 	const [settings, setSettings] = useState(defaultSettings);
 	const [loaded, setLoaded] = useState(false);
@@ -787,6 +798,7 @@ export function SettingsProvider({children}) {
 					delete stored.liveTvDirect;
 					migrated = true;
 				}
+				if (migrateKeyboardStyle(stored)) migrated = true;
 				const merged = {...defaultSettings, ...stored};
 				setSettings(merged);
 				if (migrated) saveToStorage('settings', merged);
