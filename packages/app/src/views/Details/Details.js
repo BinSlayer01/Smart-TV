@@ -491,7 +491,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 			...prev,
 			UserData: {...prev.UserData, IsFavorite: newState}
 		}));
-		window.requestAnimationFrame(() => Spotlight.focus('details-favorite-btn') || Spotlight.focus('season-favorite-btn'));
+		window.requestAnimationFrame(() => Spotlight.focus('details-favorite-btn'));
 	}, [effectiveApi, item, setItem]);
 
 	const handleToggleWatched = useCallback(async () => {
@@ -503,7 +503,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 			UserData: {...prev.UserData, Played: newState, PlayedPercentage: newState ? 100 : 0}
 		}));
 		window.dispatchEvent(new CustomEvent('moonfin:browseRefresh'));
-		window.requestAnimationFrame(() => Spotlight.focus('details-watched-btn') || Spotlight.focus('season-watched-btn'));
+		window.requestAnimationFrame(() => Spotlight.focus('details-watched-btn'));
 	}, [effectiveApi, item, setItem]);
 
 	// A rating shows on the screen before the server answers, and goes back to
@@ -1242,28 +1242,6 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 		);
 	}
 
-	if (isSeason) {
-		return (
-			<DetailScrollPage backdrop={backdrop} scrollerRef={pageScrollerRef} onScrollTo={handlePageScrollTo} sidebarDocked={sidebarDocked}>
-				<SeasonScreen
-					item={item}
-					serverUrl={effectiveServerUrl}
-					settings={settings}
-					showsSection={showsSection}
-					posterUrl={posterUrl}
-					episodes={episodes}
-					episodeRatings={episodeRatings}
-					onPlay={handlePlay}
-					onShuffle={handleShuffle}
-					onToggleWatched={handleToggleWatched}
-					onToggleFavorite={handleToggleFavorite}
-					onEpisodeSelect={handleEpisodeSelect}
-					onFocusRow={handleButtonRowFocus}
-				/>
-			</DetailScrollPage>
-		);
-	}
-
 	if (isPlaylist) {
 		const toast = toastMessage
 			? <div className={css.toast} onAnimationEnd={handleToastEnd}>{toastMessage}</div>
@@ -1399,6 +1377,24 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 			onOpenIdentifyModal={modals.handleOpenIdentifyModal}
 		/>
 	);
+
+	if (isSeason) {
+		return (
+			<DetailScrollPage backdrop={backdrop} scrollerRef={pageScrollerRef} onScrollTo={handlePageScrollTo} sidebarDocked={sidebarDocked} footer={overlays}>
+				<SeasonScreen
+					item={item}
+					serverUrl={effectiveServerUrl}
+					settings={settings}
+					showsSection={showsSection}
+					posterUrl={posterUrl}
+					episodes={episodes}
+					episodeRatings={episodeRatings}
+					actionButtons={actionButtons}
+					onEpisodeSelect={handleEpisodeSelect}
+				/>
+			</DetailScrollPage>
+		);
+	}
 
 	return (
 		<DetailScrollPage backdrop={backdrop} scrollerRef={pageScrollerRef} onScrollTo={handlePageScrollTo} sidebarDocked={sidebarDocked} footer={overlays}>
