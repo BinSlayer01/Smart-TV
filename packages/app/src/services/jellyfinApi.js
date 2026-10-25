@@ -750,6 +750,8 @@ export const api = {
 		method: watched ? 'POST' : 'DELETE'
 	}).then(publishUserData(itemId, playedUserData(watched))),
 
+	hideFromResume: (itemId) => request(`${userRoutes.hideFromResume(itemId)}Hide=true`, {method: 'POST'}),
+
 	setPlaybackPosition: (itemId, ticks) => request(userRoutes.userData(itemId), {
 		method: 'POST',
 		body: {PlaybackPositionTicks: ticks, LastPlayedDate: new Date().toISOString()}
@@ -1259,6 +1261,8 @@ export const createApiForServer = (serverUrl, token, userId, serverTypeOverride 
 		setWatched: (itemId, watched) => serverRequest(serverUserRoutes.played(itemId), {
 			method: watched ? 'POST' : 'DELETE'
 		}).then(publishUserData(itemId, playedUserData(watched))),
+
+		hideFromResume: (itemId) => serverRequest(`${serverUserRoutes.hideFromResume(itemId)}Hide=true`, {method: 'POST'}),
 
 		setPlaybackPosition: (itemId, ticks) => serverRequest(serverUserRoutes.userData(itemId), {
 			method: 'POST',
