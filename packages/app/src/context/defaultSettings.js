@@ -201,6 +201,9 @@ export const defaultSettings = {
 	pinCodeHash: '',
 	pinFailedAttempts: 0,
 	pinLockedUntil: 0,
+	// Each account's sign in PIN by user id. The keys above are the PIN the TV kept for every
+	// profile, which an account without its own still falls back to.
+	userPins: {},
 	// Strips the app back to what a child needs and locks the way out behind a PIN. Deliberately
 	// absent from SYNCABLE_KEYS, so it stays on the television it was turned on for.
 	kidsModeEnabled: false,

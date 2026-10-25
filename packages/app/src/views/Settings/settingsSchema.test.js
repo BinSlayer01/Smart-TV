@@ -31,6 +31,7 @@ const ctx = {
 	serverVersion: '10.9',
 	availableThemes: [{id: 'default', displayName: 'Default'}],
 	activeThemeId: 'default',
+	signInPin: {enabled: false, hash: '', failed: 0, lockedUntil: 0, server: false},
 	actions: {}
 };
 

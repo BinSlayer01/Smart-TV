@@ -1,8 +1,10 @@
 import {Fragment, useCallback, useState, useEffect, useMemo, useRef} from 'react';
 import {
-	hashPin, pinMatches, lockoutRemaining, registerFailedAttempt, clearedLockout, tooManyAttempts,
-	SIGN_IN_PIN, KIDS_PIN
+	hashPin, isPinShaped, pinMatches, lockoutRemaining, registerFailedAttempt, clearedLockout, tooManyAttempts, KIDS_PIN
 } from '../../utils/pinLockout';
+import {
+	PIN_ACCEPTED, dropSignInPin, isSignInPinEnabled, refreshSignInPin, signInPinMessage, storeSignInPin, verifySignInPin
+} from '../../utils/signInPin';
 import $L from '@enact/i18n/$L';
 import Spotlight from '@enact/spotlight';
 import {useAuth} from '../../context/AuthContext';
@@ -57,6 +59,7 @@ import {isPickedRow, isSeerrSliderRow} from '../../utils/pickedRows';
 import {readServerRatings} from './serverRatings';
 import {getBlockedRatings, setBlockedRatings} from '../../services/parentalControls';
 import useParentalFilter from '../../hooks/useParentalFilter';
+import useSignInPin from '../../hooks/useSignInPin';
 import {SeerrHomeRowsView, ImdbListsView} from './HomeRowToggleViews';
 import {ExternalTmdbListsView, ExternalCalendarsView, ExternalCustomRowsView, SeasonalRowView} from './ExternalRowViews';
 import {RatingSourcesView, ExcludedGenresView, PinCodeView, BlockedRatingsView, RowImageTypesView, CheckListView} from './PickerViews';
@@ -210,7 +213,10 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 	const [customRowSortOrder, setCustomRowSortOrder] = useState('desc');
 	const [customRowShowUserRatings, setCustomRowShowUserRatings] = useState(true);
 	const [editingCustomRowId, setEditingCustomRowId] = useState(null);
-	const [tempPinCode, setTempPinCode] = useState('0000');
+	const [tempPinCode, setTempPinCode] = useState('');
+	// What the PIN screen is for, and whether it's asking for the current PIN or a new one.
+	const [pinFlow, setPinFlow] = useState(null);
+	const [pinBusy, setPinBusy] = useState(false);
 	const [tempKidsPin, setTempKidsPin] = useState('');
 	const [kidsPinError, setKidsPinError] = useState('');
 	const [pinCodeError, setPinCodeError] = useState('');
@@ -579,27 +585,90 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 		popView();
 	}, [tempExcludedGenresText, updateSetting, popView]);
 
-	const openPinCode = useCallback(() => {
+	const {userId, record: signInPin, account: pinAccount, latest: latestSignInPin, save: saveSignInPin} = useSignInPin();
+
+	const openPinFlow = useCallback((purpose, returnFocusTo) => {
 		setTempPinCode('');
 		setPinCodeError('');
-		pushView({view: 'pinCode', returnFocusTo: 'setting-pinCode'});
+		setPinFlow({purpose, verify: purpose !== 'enable'});
+		pushView({view: 'pinCode', returnFocusTo});
 	}, [pushView]);
 
-	const savePinCode = useCallback(() => {
-		if (!/^\d{4}$/.test(tempPinCode)) {
+	// Turning the PIN off, changing it and removing it all take the current one first.
+	const toggleSignInPin = useCallback(() => {
+		openPinFlow(isSignInPinEnabled(signInPin) ? 'disable' : 'enable', 'setting-pinCodeProtection');
+	}, [openPinFlow, signInPin]);
+	const changeSignInPin = useCallback(() => openPinFlow('change', 'setting-pinCode'), [openPinFlow]);
+	const removeSignInPin = useCallback(() => openPinFlow('remove', 'setting-removePin'), [openPinFlow]);
+
+	// The PIN may have been set or removed on another device since.
+	const showingPinScreen = currentView.view === 'subcategory' && currentView.subcategoryId === 'pinCode';
+	useEffect(() => {
+		if (!showingPinScreen || !userId) return undefined;
+		let cancelled = false;
+		const before = latestSignInPin();
+		refreshSignInPin(before, pinAccount).then((next) => {
+			if (!cancelled && next !== before) saveSignInPin(next);
+		});
+		return () => { cancelled = true; };
+	}, [showingPinScreen, userId, pinAccount, latestSignInPin, saveSignInPin]);
+
+	const failPinStep = useCallback((message) => {
+		setTempPinCode('');
+		setPinCodeError(message);
+	}, []);
+
+	const submitPinCode = useCallback(async () => {
+		if (pinBusy || !pinFlow) return;
+		const entered = tempPinCode;
+		if (!isPinShaped(entered)) {
 			setPinCodeError($L('PIN must be exactly 4 digits.'));
 			return;
 		}
-		// Stored as a hash, and the plain one it replaces is cleared out. Choosing a PIN forgets the
-		// guesses that came before it.
-		updateSettings({
-			pinCodeHash: hashPin(tempPinCode),
-			pinCode: '',
-			...clearedLockout(SIGN_IN_PIN)
-		});
-		setPinCodeError('');
-		popView();
-	}, [tempPinCode, updateSettings, popView]);
+		const record = latestSignInPin();
+		setPinBusy(true);
+		try {
+			if (!pinFlow.verify) {
+				const stored = await storeSignInPin(record, entered, pinAccount, pinFlow.current);
+				if (stored.refused) {
+					failPinStep(stored.refused);
+					return;
+				}
+				saveSignInPin(stored.record);
+				popView();
+				return;
+			}
+
+			const checked = await verifySignInPin(record, entered, pinAccount);
+			if (checked.record !== record) saveSignInPin(checked.record);
+			if (checked.outcome !== PIN_ACCEPTED) {
+				failPinStep(signInPinMessage(checked));
+				return;
+			}
+			if (pinFlow.purpose === 'change') {
+				// The server wants the current PIN again to replace it.
+				setPinFlow({purpose: 'change', verify: false, current: entered});
+				setTempPinCode('');
+				setPinCodeError('');
+				return;
+			}
+			// A PIN the server holds has no off switch, only removal.
+			if (pinFlow.purpose === 'disable' && !checked.record.server) {
+				saveSignInPin({...checked.record, enabled: false});
+				popView();
+				return;
+			}
+			const dropped = await dropSignInPin(checked.record, pinAccount, entered);
+			if (dropped.refused) {
+				failPinStep(dropped.refused);
+				return;
+			}
+			saveSignInPin(dropped.record);
+			popView();
+		} finally {
+			setPinBusy(false);
+		}
+	}, [pinBusy, pinFlow, tempPinCode, pinAccount, latestSignInPin, saveSignInPin, failPinStep, popView]);
 
 	const openKidsMode = useCallback(() => {
 		setTempKidsPin('');
@@ -1010,6 +1079,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 		availableThemes,
 		activeThemeId,
 		ratingsResetArmed,
+		signInPin,
 		actions: {
 			openThemes,
 			openThemeStore,
@@ -1019,7 +1089,9 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			openDetailMetadata,
 			openDetailSections,
 			openDiagnostics,
-			openPinCode,
+			toggleSignInPin,
+			changeSignInPin,
+			removeSignInPin,
 			openKidsMode,
 			openLibraries,
 			openLibraryOrder,
@@ -1055,7 +1127,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 		settings, capabilities, seerr, achievements, romm, seerrLabel, isSeerr, serverUrl, ratingsResetArmed, resetRatingsSettings, toggleExperimentalTruehd, updateSetting, refreshPlugin,
 		serverVersion, availableThemes, activeThemeId, openThemes, openThemeStore, openHomeRows,
 		openDetailButtons, openOsdButtons, openDetailMetadata, openDetailSections, openDiagnostics,
-		openPinCode, openKidsMode, openLibraries, openLibraryOrder, openParentalControls, openSubtitleDownloadLanguages, openTranscodeAudioCodecs, openQrLink, openRatingSources, openRowImageTypes, openExcludedGenres, openMediaBarLibraries,
+		signInPin, toggleSignInPin, changeSignInPin, removeSignInPin, openKidsMode, openLibraries, openLibraryOrder, openParentalControls, openSubtitleDownloadLanguages, openTranscodeAudioCodecs, openQrLink, openRatingSources, openRowImageTypes, openExcludedGenres, openMediaBarLibraries,
 		openMediaBarCollections, openScreensaverLibraries, openScreensaverCollections, openScreensaverGenres,
 		openImdbLists, openSeasonalRow, openExternalTmdbLists, openExternalCalendars,
 		openExternalCustomRows, openSeerrHomeRows, openScreen, onRunSetupWizard, canProbeDevice
@@ -1531,9 +1603,10 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 				<PinCodeView
 					pin={tempPinCode}
 					error={pinCodeError}
+					verify={Boolean(pinFlow?.verify)}
 					onPinChange={changePinCode}
 					onCancel={popView}
-					onSave={savePinCode}
+					onSave={submitPinCode}
 				/>
 			)}
 			{viewName === 'libraries' && (

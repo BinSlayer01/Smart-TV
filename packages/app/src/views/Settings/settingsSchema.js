@@ -1,4 +1,5 @@
 import $L from '@enact/i18n/$L';
+import {isSignInPinEnabled} from '../../utils/signInPin';
 import {isTrickplayOn} from '../../utils/trickplayLayout';
 
 import {
@@ -222,16 +223,33 @@ export const SETTINGS_SCHEMA = [
 				label: () => $L('PIN Code'),
 				rows: [
 					{kind: KIND.SECTION, id: 'pinGeneral', label: () => $L('General')},
-					{kind: KIND.TOGGLE, key: 'pinCodeProtection', label: () => $L('Enable PIN Code'), desc: () => $L('Require a PIN to access your account'), icon: 'lock'},
-					{kind: KIND.SECTION, id: 'pinManage', label: () => $L('Manage'), when: (ctx) => ctx.settings.pinCodeProtection},
+					{
+						kind: KIND.TOGGLE,
+						key: 'pinCodeProtection',
+						label: () => $L('Enable PIN Code'),
+						desc: (ctx) => (ctx.signInPin.server ? $L('PIN synced') : $L('Require a PIN to access your account')),
+						icon: 'lock',
+						isOn: (ctx) => isSignInPinEnabled(ctx.signInPin),
+						onToggle: (ctx) => ctx.actions.toggleSignInPin()
+					},
+					{kind: KIND.SECTION, id: 'pinManage', label: () => $L('Manage'), when: (ctx) => isSignInPinEnabled(ctx.signInPin)},
 					{
 						kind: KIND.NAV,
 						id: 'pinCode',
 						label: () => $L('Change PIN'),
 						desc: () => $L('Set a new PIN code'),
-						icon: 'pin',
-						when: (ctx) => ctx.settings.pinCodeProtection,
-						action: (ctx) => ctx.actions.openPinCode()
+						icon: 'edit',
+						when: (ctx) => isSignInPinEnabled(ctx.signInPin),
+						action: (ctx) => ctx.actions.changeSignInPin()
+					},
+					{
+						kind: KIND.NAV,
+						id: 'removePin',
+						label: () => $L('Remove PIN'),
+						desc: () => $L('Remove PIN code protection'),
+						icon: 'delete',
+						when: (ctx) => isSignInPinEnabled(ctx.signInPin),
+						action: (ctx) => ctx.actions.removeSignInPin()
 					}
 				]
 			},
