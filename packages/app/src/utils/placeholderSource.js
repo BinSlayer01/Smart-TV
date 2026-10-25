@@ -22,3 +22,11 @@ export const isUnprobedPlaceholder = (source) => Boolean(source) &&
 // The sources a PlaybackInfo asked without an id came back with that were actually probed.
 export const probedSources = (playbackInfo) => (playbackInfo?.MediaSources || []).filter((source) => source.MediaStreams?.length);
 
+// Whether a PlaybackInfo pinned to a source that failed may ask again with no id and take the
+// server's own pick. A single version item gets the same title back either way, which matters when
+// the server swaps the source, like the live stream of a recording that is still being written.
+// An id the item doesn't list is stale, and several versions keep the viewer's pick.
+export const canRetryWithoutMediaSourceId = (item, mediaSourceId) => {
+	const ids = (item?.MediaSources || []).map((source) => source.Id);
+	return Boolean(mediaSourceId) && ids.length > 0 && (ids.length === 1 || ids.indexOf(mediaSourceId) === -1);
+};

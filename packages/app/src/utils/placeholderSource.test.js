@@ -1,4 +1,4 @@
-import {isStreamlessStaticSource, isUnprobedPlaceholder, probedSources} from './placeholderSource';
+import {canRetryWithoutMediaSourceId, isStreamlessStaticSource, isUnprobedPlaceholder, probedSources} from './placeholderSource';
 
 const audio = {Type: 'Audio', Index: 1};
 const channelItem = {Id: 'i1', Type: 'Movie', MediaSources: [{Id: 'ph', MediaStreams: []}]};
@@ -30,5 +30,19 @@ describe('isUnprobedPlaceholder and probedSources', () => {
 	test('keeps only the sources that came back with streams', () => {
 		expect(probedSources({MediaSources: [{Id: 'ph'}, {Id: 'real', MediaStreams: [audio]}]}).map((source) => source.Id)).toEqual(['real']);
 		expect(probedSources(null)).toEqual([]);
+	});
+});
+
+describe('canRetryWithoutMediaSourceId', () => {
+	test('a single version or a stale id may ask again without it', () => {
+		const recording = {MediaSources: [{Id: 'rec1'}]};
+		expect(canRetryWithoutMediaSourceId(recording, 'rec1')).toBe(true);
+		expect(canRetryWithoutMediaSourceId({MediaSources: [{Id: 'a'}, {Id: 'b'}]}, 'gone')).toBe(true);
+	});
+
+	test('a picked version, no id or an item without sources keeps what it had', () => {
+		expect(canRetryWithoutMediaSourceId({MediaSources: [{Id: 'a'}, {Id: 'b'}]}, 'b')).toBe(false);
+		expect(canRetryWithoutMediaSourceId({MediaSources: [{Id: 'rec1'}]}, undefined)).toBe(false);
+		expect(canRetryWithoutMediaSourceId({}, 'rec1')).toBe(false);
 	});
 });

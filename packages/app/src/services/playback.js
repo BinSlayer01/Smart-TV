@@ -11,7 +11,7 @@ import {videoRangeTypeOf} from '../utils/videoRange';
 import {getVolumeState, lastVolumeState} from './systemVolume';
 import {loadShellBridge} from './shellBridge';
 import {linkBitrate} from './linkBitrate';
-import {isStreamlessStaticSource, isUnprobedPlaceholder, probedSources} from '../utils/placeholderSource';
+import {canRetryWithoutMediaSourceId, isStreamlessStaticSource, isUnprobedPlaceholder, probedSources} from '../utils/placeholderSource';
 
 export const PlayMethod = {
 	DirectPlay: 'DirectPlay',
@@ -549,13 +549,21 @@ export const getPlaybackInfo = async (itemId, options = {}) => {
 			MaxStreamingBitrate: maxBitrate,
 			MediaSourceId: sourceId
 		});
+		if (info?.ErrorCode) throw new Error(`Playback error: ${info.ErrorCode}`);
 		if (!info?.MediaSources?.length) throw new Error('No playable media source found');
 		return info;
 	};
 
 	const isEmby = serverType === 'emby';
 	let mediaSourceId = isEmby && isStreamlessStaticSource(options.item, options.mediaSourceId) ? undefined : options.mediaSourceId;
-	let playbackInfo = await askPlaybackInfo(mediaSourceId);
+	let playbackInfo;
+	try {
+		playbackInfo = await askPlaybackInfo(mediaSourceId);
+	} catch (err) {
+		if (!canRetryWithoutMediaSourceId(options.item, mediaSourceId)) throw err;
+		mediaSourceId = undefined;
+		playbackInfo = await askPlaybackInfo();
+	}
 
 	// The same placeholder reached through an item that came without its sources. One with several
 	// versions is left alone, since what comes back without the id would be its other versions.

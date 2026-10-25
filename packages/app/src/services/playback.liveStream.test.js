@@ -252,4 +252,21 @@ describe('the source id PlaybackInfo is pinned to', () => {
 		expect(result.playSessionId).toBe('probed');
 		expect(result.mediaSourceId).toBe('real');
 	});
+
+	test('an in-progress recording that has no compatible stream for its pinned id plays the one the server picks', async () => {
+		const recording = {Id: 'rec', Type: 'Recording', MediaSources: [{Id: 'rec1'}]};
+		api.getPlaybackInfo
+			.mockResolvedValueOnce({MediaSources: [], ErrorCode: 'NoCompatibleStream'})
+			.mockResolvedValueOnce({PlaySessionId: 'active', MediaSources: [{Id: 'active', SupportsDirectPlay: true, IsInfiniteStream: true, Container: 'ts', MediaStreams: []}]});
+		const result = await playback.getPlaybackInfo(recording.Id, {item: recording, mediaSourceId: 'rec1'});
+		expect(sentIds()).toEqual(['rec1', undefined]);
+		expect(result.mediaSourceId).toBe('active');
+	});
+
+	test('a picked version that fails is not swapped for another', async () => {
+		const item = {Id: 'two', Type: 'Movie', MediaSources: [{Id: 'a'}, {Id: 'b'}]};
+		api.getPlaybackInfo.mockResolvedValueOnce({MediaSources: [], ErrorCode: 'NoCompatibleStream'});
+		await expect(playback.getPlaybackInfo(item.Id, {item, mediaSourceId: 'b'})).rejects.toThrow('NoCompatibleStream');
+		expect(sentIds()).toEqual(['b']);
+	});
 });
