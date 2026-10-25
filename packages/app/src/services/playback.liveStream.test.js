@@ -230,3 +230,26 @@ describe('transcode preferences', () => {
 		expect(lastRequest()).toMatchObject({EnableDirectPlay: false, EnableDirectStream: true});
 	});
 });
+
+describe('the source id PlaybackInfo is pinned to', () => {
+	const sentIds = () => api.getPlaybackInfo.mock.calls.map(([, body]) => body.MediaSourceId);
+	const probed = {Id: 'real', SupportsDirectPlay: true, Container: 'mkv', MediaStreams: [{Type: 'Audio', Index: 1}]};
+
+	test("an Emby channel item's placeholder is left off so the server probes the file", async () => {
+		const item = {Id: 'ch-item', Type: 'Movie', MediaSources: [{Id: 'ph', MediaStreams: []}]};
+		api.getPlaybackInfo.mockResolvedValue({PlaySessionId: 'session', MediaSources: [probed]});
+		await playback.getPlaybackInfo(item.Id, {item, serverType: 'emby', mediaSourceId: 'ph'});
+		await playback.getPlaybackInfo(item.Id, {item, serverType: 'jellyfin', mediaSourceId: 'ph'});
+		expect(sentIds()).toEqual([undefined, 'ph']);
+	});
+
+	test('Emby is asked again without the id when the placeholder comes back unprobed', async () => {
+		api.getPlaybackInfo
+			.mockResolvedValueOnce({PlaySessionId: 'first', MediaSources: [{Id: 'ph', MediaStreams: [], SupportsDirectPlay: false, SupportsDirectStream: false, TranscodingUrl: '/x'}]})
+			.mockResolvedValueOnce({PlaySessionId: 'probed', MediaSources: [{Id: 'ph', MediaStreams: []}, probed]});
+		const result = await playback.getPlaybackInfo('ch-item', {item: {Id: 'ch-item', Type: 'Movie'}, serverType: 'emby', mediaSourceId: 'ph'});
+		expect(sentIds()).toEqual(['ph', undefined]);
+		expect(result.playSessionId).toBe('probed');
+		expect(result.mediaSourceId).toBe('real');
+	});
+});

@@ -11,6 +11,7 @@ import {videoRangeTypeOf} from '../utils/videoRange';
 import {getVolumeState, lastVolumeState} from './systemVolume';
 import {loadShellBridge} from './shellBridge';
 import {linkBitrate} from './linkBitrate';
+import {isStreamlessStaticSource, isUnprobedPlaceholder, probedSources} from '../utils/placeholderSource';
 
 export const PlayMethod = {
 	DirectPlay: 'DirectPlay',
@@ -535,22 +536,39 @@ export const getPlaybackInfo = async (itemId, options = {}) => {
 		console.log('[playback] SubtitleProfiles sent to server:', subProfiles.map(p => p.Format + ':' + p.Method).join(', '));
 	}
 
-	let playbackInfo = await api.getPlaybackInfo(itemId, {
-		DeviceProfile: deviceProfile,
-		StartTimeTicks: requestedStartTime,
-		AutoOpenLiveStream: true,
-		EnableDirectPlay: enableDirectPlay,
-		EnableDirectStream: enableDirectStream,
-		EnableTranscoding: options.enableTranscoding !== false,
-		AudioStreamIndex: options.audioStreamIndex,
-		SubtitleStreamIndex: sentSubtitleStreamIndex,
-		MaxStreamingBitrate: maxBitrate,
-		MediaSourceId: options.mediaSourceId
-	});
+	const askPlaybackInfo = async (sourceId) => {
+		const info = await api.getPlaybackInfo(itemId, {
+			DeviceProfile: deviceProfile,
+			StartTimeTicks: requestedStartTime,
+			AutoOpenLiveStream: true,
+			EnableDirectPlay: enableDirectPlay,
+			EnableDirectStream: enableDirectStream,
+			EnableTranscoding: options.enableTranscoding !== false,
+			AudioStreamIndex: options.audioStreamIndex,
+			SubtitleStreamIndex: sentSubtitleStreamIndex,
+			MaxStreamingBitrate: maxBitrate,
+			MediaSourceId: sourceId
+		});
+		if (!info?.MediaSources?.length) throw new Error('No playable media source found');
+		return info;
+	};
 
-	if (!playbackInfo.MediaSources?.length) {
-		throw new Error('No playable media source found');
+	const isEmby = serverType === 'emby';
+	let mediaSourceId = isEmby && isStreamlessStaticSource(options.item, options.mediaSourceId) ? undefined : options.mediaSourceId;
+	let playbackInfo = await askPlaybackInfo(mediaSourceId);
+
+	// The same placeholder reached through an item that came without its sources. One with several
+	// versions is left alone, since what comes back without the id would be its other versions.
+	if (isEmby && mediaSourceId && (options.item?.MediaSources?.length || 0) <= 1 &&
+			isUnprobedPlaceholder(playbackInfo.MediaSources.find((source) => source.Id === mediaSourceId) || playbackInfo.MediaSources[0])) {
+		const retry = await askPlaybackInfo().catch(() => null);
+		const probed = probedSources(retry);
+		if (probed.length) {
+			playbackInfo = {...retry, MediaSources: probed};
+			mediaSourceId = undefined;
+		}
 	}
+	options = {...options, mediaSourceId};
 
 	const firstSource = playbackInfo.MediaSources[0];
 	console.log('[playback] Server response - MediaSource[0]:', {
