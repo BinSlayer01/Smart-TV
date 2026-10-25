@@ -237,6 +237,7 @@ export const defaultSettings = {
 	useDetailedSubHeadings: true,
 	showMediaDetailsOnLibraryPage: true,
 	libraryStyle: 'classic',
+	bookLibraryStyle: 'bookstore',
 	musicLibraryStyle: 'immersive',
 	hideBackdropsInLibraries: false,
 	useSeriesThumbnails: false,

@@ -233,6 +233,12 @@ export const getLibraryStyleOptions = () => [
 	{ value: 'docked', label: $L('Docked') }
 ];
 
+export const getBookLibraryStyleOptions = () => [
+	{ value: 'classic', label: $L('Classic') },
+	{ value: 'readingRoom', label: $L('Reading Room') },
+	{ value: 'bookstore', label: $L('Bookstore') }
+];
+
 export const getMusicLibraryStyleOptions = () => [
 	{ value: 'classic', label: $L('Classic') },
 	{ value: 'quickAccess', label: $L('Quick Access') },

@@ -359,6 +359,23 @@ describe('the music library style', () => {
 	});
 });
 
+describe('the book library style', () => {
+	test('defaults to bookstore', () => {
+		expect(defaultSettings.bookLibraryStyle).toBe('bookstore');
+	});
+
+	test('takes and sends each style under its own name', () => {
+		['classic', 'readingRoom', 'bookstore'].forEach((style) => {
+			expect(profileToLocal({bookLibraryStyle: style})).toEqual({bookLibraryStyle: style});
+			expect(localToProfile({...defaultSettings, bookLibraryStyle: style}, ['bookLibraryStyle'])).toEqual({bookLibraryStyle: style});
+		});
+	});
+
+	test('keeps the style it has when the profile names one this app has no way to draw', () => {
+		expect(profileToLocal({bookLibraryStyle: 'immersive'})).toEqual({});
+	});
+});
+
 describe('the media preview switches', () => {
 	test('default to off with sound on', () => {
 		expect(defaultSettings.episodePreviewEnabled).toBe(false);

@@ -398,7 +398,8 @@ const ModernDetailContent = (props) => {
 	// On an episode the Episodes tab lists the rest of its season, which is the More episodes
 	// section. A season's own list is the page itself.
 	const listsEpisodes = isSeason || (isEpisode && showsSection('moreEpisodes'));
-	const showsDetails = showsSection('mediaInfo') && supportsMediaSourceSelection && mediaSource?.MediaStreams?.length;
+	const showsDetails = showsSection('mediaInfo') &&
+		(item.Type === 'Book' || (supportsMediaSourceSelection && mediaSource?.MediaStreams?.length));
 	// Tabs are data-driven, appearing only when their data is present. A section the viewer
 	// switched off counts as one with nothing in it, so its tab goes the same way.
 	const {parts: additionalParts, others: otherExtras} = useMemo(() => splitAdditionalParts(extras), [extras]);
