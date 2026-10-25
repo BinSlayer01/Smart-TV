@@ -5,7 +5,7 @@ import {getFromStorage} from './storage';
 import {selectCompatibleAlternateAudio} from '../utils/alternateAudio';
 import {serverLogger} from './serverLogger';
 import {TEXT_SUBTITLE_CODECS, isAssSubtitleCodec, isPgsSubtitleCodec, isBurnInSubtitleCodec, isInBandSubtitleTrack} from '../utils/subtitleCodecs';
-import {applyProfileTuning, transcodesAudioCodec} from '../utils/deviceProfileTuning';
+import {applyProfileTuning, preferMpegTsHlsForLive, transcodesAudioCodec} from '../utils/deviceProfileTuning';
 import {findNextInSeason, findNextSeason, firstPlayableEpisode} from '../utils/nextEpisode';
 import {videoRangeTypeOf} from '../utils/videoRange';
 import {getVolumeState, lastVolumeState} from './systemVolume';
@@ -476,6 +476,7 @@ export const getPlaybackInfo = async (itemId, options = {}) => {
 		capabilities,
 		{isLiveTV}
 	);
+	if (isLiveTV && serverType === 'emby') deviceProfile = preferMpegTsHlsForLive(deviceProfile);
 
 	// What the first request for an item allowed holds for every later one while
 	// it plays, so a track switch, a reopen or a fallback never brings back what

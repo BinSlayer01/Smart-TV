@@ -147,7 +147,8 @@ const buildDirectPlayProfiles = (caps) => {
 		{Container: 'mkv', Type: 'Video', VideoCodec: videoCodecs, AudioCodec: mkvAudioCodecs},
 		{Container: 'mov', Type: 'Video', VideoCodec: videoCodecs, AudioCodec: 'aac'},
 		...(caps.webm ? [{Container: 'webm', Type: 'Video', VideoCodec: videoCodecs, AudioCodec: 'opus,vorbis'}] : []),
-		...(caps.ts ? [{Container: 'ts', Type: 'Video', VideoCodec: videoCodecs, AudioCodec: audioCodecs}] : []),
+		// Emby names a live channel's container mpegts and matches names exactly
+		...(caps.ts ? [{Container: 'ts,mpegts', Type: 'Video', VideoCodec: videoCodecs, AudioCodec: audioCodecs}] : []),
 		{Container: 'mp3', Type: 'Audio'},
 		{Container: 'flac', Type: 'Audio'},
 		{Container: 'aac', Type: 'Audio'},

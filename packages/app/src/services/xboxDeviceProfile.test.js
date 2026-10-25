@@ -219,7 +219,7 @@ describe('the profile with the console player', () => {
 		const profile = await getJellyfinDeviceProfile();
 		expect(profile.DirectPlayProfiles.find((entry) => entry.Container === 'mkv').AudioCodec).toContain('dts,truehd');
 		expect(profile.DirectPlayProfiles.some((entry) => entry.Container === 'webm')).toBe(true);
-		expect(profile.DirectPlayProfiles.some((entry) => entry.Container === 'ts')).toBe(true);
+		expect(profile.DirectPlayProfiles.some((entry) => entry.Container === 'ts,mpegts')).toBe(true);
 		expect(profile.DirectPlayProfiles.some((entry) => entry.Container === 'hls')).toBe(true);
 		const range = profile.CodecProfiles.find((entry) => entry.Codec === 'hevc').Conditions.find((condition) => condition.Property === 'VideoRangeType');
 		expect(range.Value).toBe('SDR|HDR10|HDR10Plus|DOVIWithHDR10|DOVIWithHDR10Plus|DOVIWithEL|DOVIWithELHDR10Plus|DOVIInvalid');
