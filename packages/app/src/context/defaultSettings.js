@@ -248,6 +248,7 @@ export const defaultSettings = {
 	useSeriesThumbnails: false,
 	// The server keys, as the other clients store them, so they sync as they are.
 	episodePreviewEnabled: false,
+	mediaPreviewMode: 'media',
 	previewAudioEnabled: true,
 	previewVolume: 100,
 	homeRowsPosterSize: 'default',

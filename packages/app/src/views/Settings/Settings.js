@@ -238,7 +238,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 				const subcats = getSubcategories(cv.id); // eslint-disable-line no-use-before-define
 				Spotlight.focus(subcats.length > 0 ? `subcat-${subcats[0].id}` : 'category-view');
 			} else if (cv.view === 'options') {
-				const idx = cv.options?.findIndex((o) => o.value === settings[cv.settingKey]);
+				const idx = cv.options?.findIndex((o) => o.value === cv.value);
 				Spotlight.focus(idx >= 0 ? `opt-${idx}` : 'opt-0');
 			} else if (cv.view === 'themes') {
 				const selectedId = availableThemes.find((t) => t.id === activeThemeId)?.id;
@@ -1122,6 +1122,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			resetRatingsSettings,
 			toggleExperimentalTruehd,
 			setSetting: updateSetting,
+			setSettings: updateSettings,
 			refreshPlugin,
 			runSetupAgain: onRunSetupWizard,
 			// The probe page ships with the Xbox build, and its report goes to the server
@@ -1129,7 +1130,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 			openDeviceProbe: canProbeDevice ? openDeviceProbe : null
 		}
 	}), [
-		settings, capabilities, seerr, achievements, romm, seerrLabel, isSeerr, serverUrl, ratingsResetArmed, resetRatingsSettings, toggleExperimentalTruehd, updateSetting, refreshPlugin,
+		settings, capabilities, seerr, achievements, romm, seerrLabel, isSeerr, serverUrl, ratingsResetArmed, resetRatingsSettings, toggleExperimentalTruehd, updateSetting, updateSettings, refreshPlugin,
 		serverVersion, availableThemes, activeThemeId, openThemes, openThemeStore, openHomeRows,
 		openDetailButtons, openOsdButtons, openDetailMetadata, openDetailSections, openDiagnostics,
 		signInPin, toggleSignInPin, changeSignInPin, removeSignInPin, openKidsMode, openLibraries, openLibraryOrder, openParentalControls, openSubtitleDownloadLanguages, openTranscodeAudioCodecs, openQrLink, openRatingSources, openRowImageTypes, openExcludedGenres, openMediaBarLibraries,
@@ -1180,8 +1181,13 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 	}, [pushView, currentView.id]);
 
 	const selectOptionValue = useCallback((value) => {
+		if (currentView.onSelect) {
+			currentView.onSelect(value);
+			popView();
+			return;
+		}
 		handleOptionSelect(currentView.settingKey, value);
-	}, [handleOptionSelect, currentView.settingKey]);
+	}, [handleOptionSelect, popView, currentView]);
 
 	const showMoreLogs = useCallback(() => {
 		setLogRenderLimit((prev) => prev + LOG_RENDER_STEP);
@@ -1762,7 +1768,7 @@ const Settings = ({ onBack, onLibrariesChanged, onRunSetupWizard, onSelectItem, 
 				<OptionsDialog
 					title={currentView.title}
 					options={currentView.options}
-					currentValue={currentView.settingKey === '__themeSelection' ? activeThemeId : settings[currentView.settingKey]}
+					currentValue={currentView.settingKey === '__themeSelection' ? activeThemeId : currentView.value}
 					onSelect={selectOptionValue}
 				/>
 			)}

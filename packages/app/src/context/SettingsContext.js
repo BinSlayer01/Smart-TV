@@ -288,7 +288,7 @@ export const SYNCABLE_KEYS = [
 	'mediaBarSourceType', 'mediaBarLibraryIds', 'mediaBarCollectionIds', 'mediaBarExternalLists',
 	'mediaBarOverlayColor', 'mediaBarOverlayOpacity',
 	'homeRows', 'homeRowsStyle', 'modernCardsOnMyMediaRow', 'detailScreenStyle', 'detailExpandedTabs', 'fullScreenRows', 'homeRowsPosterSize', 'useSeriesThumbnails',
-	'episodePreviewEnabled', 'previewAudioEnabled', 'previewVolume',
+	'episodePreviewEnabled', 'mediaPreviewMode', 'previewAudioEnabled', 'previewVolume',
 	'hideDetailsMediaDescription', 'detailUseSeriesThumbnails', 'hideHomeMediaDescription',
 	'personalRatingStyle', 'recentlyReleasedSeriesType', 'mergeRecentRowsByType', 'playlistsGroupByType', 'groupItemsIntoCollections',
 	'useDetailedSubHeadings', 'showMediaDetailsOnLibraryPage', 'hideBackdropsInLibraries', 'libraryStyle', 'bookLibraryStyle', 'musicLibraryStyle',
