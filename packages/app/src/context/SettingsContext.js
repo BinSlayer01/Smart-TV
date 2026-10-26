@@ -285,7 +285,7 @@ export const SYNCABLE_KEYS = [
 	'autoPlay', 'nextUpBehavior', 'nextUpTimeout', 'nextUpCountdownStyle',
 	'replaceSkipOutroWithNextUp',
 	'showHomeBackdrop', 'detailsBackdropEnabled', 'backdropBlurHome', 'backdropBlurDetail',
-	'mediaBarSourceType', 'mediaBarLibraryIds', 'mediaBarCollectionIds',
+	'mediaBarSourceType', 'mediaBarLibraryIds', 'mediaBarCollectionIds', 'mediaBarExternalLists',
 	'mediaBarOverlayColor', 'mediaBarOverlayOpacity',
 	'homeRows', 'homeRowsStyle', 'modernCardsOnMyMediaRow', 'detailScreenStyle', 'detailExpandedTabs', 'fullScreenRows', 'homeRowsPosterSize', 'useSeriesThumbnails',
 	'episodePreviewEnabled', 'previewAudioEnabled', 'previewVolume',

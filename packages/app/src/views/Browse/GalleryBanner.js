@@ -3,7 +3,7 @@ import {isMdblistEnabled} from '../../services/mdblistApi';
 import Spottable from '@enact/spotlight/Spottable';
 import Spotlight from '@enact/spotlight';
 import $L from '@enact/i18n/$L';
-import {getImageUrl, getBackdropId, formatDuration} from '../../utils/helpers';
+import {getFeaturedBackdropUrl, formatDuration} from '../../utils/helpers';
 import RatingsRow from '../../components/RatingsRow';
 import {createApiForServer} from '../../services/jellyfinApi';
 import {KEYS} from '../../utils/keys';
@@ -86,7 +86,8 @@ const GalleryBanner = memo(({
 	}, [featuredItems]);
 
 	useEffect(() => {
-		if (!currentFeatured?.Id) {
+		// A slide from an outside list isn't on the server, so there is no cast to ask it for.
+		if (!currentFeatured?.Id || currentFeatured._external) {
 			setActiveDetail(null);
 			return;
 		}
@@ -241,10 +242,7 @@ const GalleryBanner = memo(({
 					{panels.map((item, i) => {
 						const absoluteIndex = pageStart + i;
 						const isActive = absoluteIndex === safeIndex;
-						const backdropId = getBackdropId(item);
-						const backdropUrl = backdropId
-							? getImageUrl(getItemServerUrl(item), backdropId, 'Backdrop', BACKDROP_OPTS)
-							: null;
+						const backdropUrl = getFeaturedBackdropUrl(getItemServerUrl(item), item, BACKDROP_OPTS);
 
 						return (
 							<div

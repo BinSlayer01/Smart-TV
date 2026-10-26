@@ -52,6 +52,11 @@ export const getBackdropId = (item) => {
 	return null;
 };
 
+// A media bar slide from an outside list brings its own backdrop, since the server has none.
+export const getFeaturedBackdropUrl = (serverUrl, item, options) => (item?._external
+	? item._externalBackdropUrl || null
+	: getImageUrl(serverUrl, getBackdropId(item), 'Backdrop', options));
+
 // Check if item has a Primary image and return the item ID to use
 export const getPrimaryImageId = (item) => {
 	if (!item) return null;

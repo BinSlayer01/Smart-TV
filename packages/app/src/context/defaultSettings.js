@@ -160,6 +160,7 @@ export const defaultSettings = {
 	mediaBarSourceType: 'library',
 	mediaBarLibraryIds: [],
 	mediaBarCollectionIds: [],
+	mediaBarExternalLists: [],
 	unifiedLibraryMode: false,
 	useMoonfinPlugin: false,
 	// The plugin profile this device syncs with. Empty follows the TV profile. It's a choice

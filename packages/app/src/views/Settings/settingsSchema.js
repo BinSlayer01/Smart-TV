@@ -533,6 +533,17 @@ export const SETTINGS_SCHEMA = [
 					},
 					{
 						kind: KIND.NAV,
+						id: 'sourceExternalLists',
+						label: () => $L('External Lists'),
+						desc: (ctx) => (Array.isArray(ctx.settings.mediaBarExternalLists) && ctx.settings.mediaBarExternalLists.length > 0
+							? countLabel(ctx.settings.mediaBarExternalLists.length)
+							: $L('None selected')),
+						icon: 'public',
+						action: (ctx) => ctx.actions.openMediaBarExternalLists(),
+						when: whenPlugin
+					},
+					{
+						kind: KIND.NAV,
 						id: 'excludedGenres',
 						label: () => $L('Excluded Genres'),
 						desc: (ctx) => (Array.isArray(ctx.settings.excludedGenres) && ctx.settings.excludedGenres.length > 0

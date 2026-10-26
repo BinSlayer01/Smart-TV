@@ -168,7 +168,7 @@ export const fetchExternalPresetRow = async (rowId, options = {}) => {
 	if (!cfg) return [];
 	const items = await fetchCustomRow({source: cfg.source, type: cfg.type, params: {}}, options);
 	const type = chartItemType(cfg.type);
-	return items.slice(0, HOME_ROW_LIMIT).map((it) => normalizeExternalItem(type ? {...it, type} : it, rowId, cfg.source));
+	return items.slice(0, options.limit || HOME_ROW_LIMIT).map((it) => normalizeExternalItem(type ? {...it, type} : it, rowId, cfg.source));
 };
 
 // Fetches a user configured custom row. `row` is the stored config
@@ -176,7 +176,7 @@ export const fetchExternalPresetRow = async (rowId, options = {}) => {
 export const fetchCustomHomeRow = async (row, options = {}) => {
 	const items = await fetchCustomRow({source: row.source, type: row.type, params: row.params}, options);
 	const sorted = applySorting(items, row.sortBy, row.sortOrder);
-	return sorted.slice(0, HOME_ROW_LIMIT).map((it) => {
+	return sorted.slice(0, options.limit || HOME_ROW_LIMIT).map((it) => {
 		const norm = normalizeExternalItem(it, row.id, row.source);
 		if (row.showUserRatings === false) norm.UserRating = null;
 		return norm;

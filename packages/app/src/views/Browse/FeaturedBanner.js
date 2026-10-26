@@ -3,7 +3,7 @@ import {isMdblistEnabled} from '../../services/mdblistApi';
 import Spottable from '@enact/spotlight/Spottable';
 import Spotlight from '@enact/spotlight';
 import $L from '@enact/i18n/$L';
-import {getImageUrl, getBackdropId, formatDuration} from '../../utils/helpers';
+import {getFeaturedBackdropUrl, formatDuration} from '../../utils/helpers';
 import RatingsRow from '../../components/RatingsRow';
 import {KEYS} from '../../utils/keys';
 import useTrailerPreview from './useTrailerPreview';
@@ -91,10 +91,7 @@ const FeaturedBanner = memo(({
 			const index = (currentIndex + offset + featuredItems.length) % featuredItems.length;
 			const item = featuredItems[index];
 			if (item) {
-				const backdropId = getBackdropId(item);
-				if (backdropId) {
-					preloadImage(getImageUrl(serverUrl, backdropId, 'Backdrop', {maxWidth: 1920, quality: 85}));
-				}
+				preloadImage(getFeaturedBackdropUrl(serverUrl, item, {maxWidth: 1920, quality: 85}));
 				if (item.LogoUrl) {
 					preloadImage(item.LogoUrl);
 				}
@@ -221,7 +218,7 @@ const FeaturedBanner = memo(({
 			>
 				<div className={css.featuredBackdrop}>
 					<img
-						src={getImageUrl(getItemServerUrl(currentFeatured), getBackdropId(currentFeatured), 'Backdrop', {maxWidth: 1920, quality: 85})}
+						src={getFeaturedBackdropUrl(getItemServerUrl(currentFeatured), currentFeatured, {maxWidth: 1920, quality: 85})}
 						alt=""
 					/>
 				</div>
