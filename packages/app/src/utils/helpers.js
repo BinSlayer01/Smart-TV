@@ -1,5 +1,6 @@
 import {buildQueryString} from './urlCompat';
 import {uiLocale} from './uiLocale';
+import {parseServerDate} from './serverDate';
 
 export const formatDuration = (ticks) => {
 	if (!ticks) return '';
@@ -13,9 +14,8 @@ export const formatDuration = (ticks) => {
 };
 
 export const formatDate = (dateString) => {
-	if (!dateString) return '';
-	const date = new Date(dateString);
-	return date.toLocaleDateString(uiLocale());
+	const date = parseServerDate(dateString);
+	return date ? date.toLocaleDateString(uiLocale()) : '';
 };
 
 export const getImageUrl = (serverUrl, itemId, imageType = 'Primary', options = {}) => {

@@ -2,27 +2,26 @@ import $L from '@enact/i18n/$L';
 
 import {SHOWS_EVERYTHING} from './detailSectionLayout';
 import {uiLocale} from './uiLocale';
+import {parseServerDate} from './serverDate';
 
 // A birthday is a calendar date, not a moment. Both servers send it anchored to
 // UTC, so reading it back in the viewer's zone moves it a day earlier for
 // anyone west of it. The parts are taken as written and rebuilt locally.
-const parseDate = (value) => {
-	if (!value) return null;
-	const parsed = new Date(value);
-	if (isNaN(parsed.getTime())) return null;
-	return new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
+export const personCalendarDate = (value) => {
+	const parsed = parseServerDate(value);
+	return parsed ? new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()) : null;
 };
 
 export const formatPersonDate = (value) => {
-	const date = parseDate(value);
+	const date = personCalendarDate(value);
 	if (!date) return null;
 	return date.toLocaleDateString(uiLocale(), {year: 'numeric', month: 'long', day: 'numeric'});
 };
 
 export const personAge = (birthValue, deathValue) => {
-	const birth = parseDate(birthValue);
+	const birth = personCalendarDate(birthValue);
 	if (!birth) return null;
-	const end = parseDate(deathValue) || new Date();
+	const end = personCalendarDate(deathValue) || new Date();
 	let age = end.getFullYear() - birth.getFullYear();
 	const monthDiff = end.getMonth() - birth.getMonth();
 	if (monthDiff < 0 || (monthDiff === 0 && end.getDate() < birth.getDate())) age -= 1;
@@ -140,8 +139,8 @@ export const sortCredits = (credits, sortOption = 'alphabetical') => {
 	// opens on something that cant be placed.
 	const ascending = sortOption === 'releaseDateAsc';
 	sorted.sort((a, b) => {
-		const dateA = parseDate(creditDate(a));
-		const dateB = parseDate(creditDate(b));
+		const dateA = personCalendarDate(creditDate(a));
+		const dateB = personCalendarDate(creditDate(b));
 		if (!dateA && !dateB) return byTitle(a, b);
 		if (!dateA) return 1;
 		if (!dateB) return -1;

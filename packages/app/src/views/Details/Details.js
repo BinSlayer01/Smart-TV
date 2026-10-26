@@ -52,7 +52,7 @@ import TrailerPicker from './TrailerPicker';
 import ReviewDialog from './ReviewDialog';
 import PersonalRatingDialog from '../../components/PersonalRatingDialog';
 import {clampRating, clearedRatingPatch, isRatableItemType, normalizeRatingStyle, numericRatingPatch, thumbRatingPatch} from '../../utils/personalRating';
-import {personDateLines, splitFilmography} from '../../utils/personCredits';
+import {personCalendarDate, personDateLines, splitFilmography} from '../../utils/personCredits';
 import {mergeCollectionWithMissing} from './seerrMissingCollectionItems';
 import ClassicDetailScreen from './ClassicDetailScreen';
 import SpotlightDetailContent from './spotlight/SpotlightDetailContent';
@@ -1035,7 +1035,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 	const personMovies = filmography?.movies || [];
 	const personSeries = filmography?.series || [];
 	const personDates = isPerson ? personDateLines(item.PremiereDate, item.EndDate) : [];
-	const birthDate = isPerson && item.PremiereDate ? new Date(item.PremiereDate) : null;
+	const birthDate = isPerson ? personCalendarDate(item.PremiereDate) : null;
 	const birthPlace = isPerson && showsSection('birthplace') && item.ProductionLocations?.length > 0 ? item.ProductionLocations[0] : '';
 
 	const backdrop = (

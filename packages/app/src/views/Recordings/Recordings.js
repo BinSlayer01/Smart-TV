@@ -13,6 +13,7 @@ import {
 	canKeepAsComplete, keepAsComplete, refreshIncompleteRecordings, useIncompleteRecording
 } from '../../services/incompleteRecordings';
 import {formatDuration} from '../../utils/helpers';
+import {parseServerDate} from '../../utils/serverDate';
 import {seriesChoiceFlags, seriesChoiceOf} from '../../utils/liveTvGuide';
 import SeriesEpisodeChoices from '../../components/SeriesEpisodeChoices';
 
@@ -59,7 +60,7 @@ const joinParts = (...parts) => parts.filter(Boolean).join(' • ');
 // A cancelled, finished or failed timer, or one whose showing is over, has nothing left to record.
 const HIDDEN_TIMER_STATUSES = ['Cancelled', 'Completed', 'Error'];
 const isUpcomingTimer = (timer, now) => HIDDEN_TIMER_STATUSES.indexOf(timer.Status) < 0 &&
-	!(timer.EndDate && new Date(timer.EndDate).getTime() <= now);
+	!(parseServerDate(timer.EndDate)?.getTime() <= now);
 
 const Card = memo(({payload, imageUrl, title, subtitle, isSeries, isRecording, onSelect}) => {
 	const [imgFailed, setImgFailed] = useState(false);
