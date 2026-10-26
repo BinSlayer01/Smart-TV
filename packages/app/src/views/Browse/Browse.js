@@ -429,7 +429,7 @@ const Browse = ({
 	const handleNavigateUp = useCallback((fromRowIndex) => {
 		const targetIndex = focusableRowFrom(fromRowIndex - 1, -1);
 		if (targetIndex < 0) {
-			if (showFeaturedBar !== false) {
+			if (showFeaturedBar !== false && featuredItems.length > 0) {
 				setBrowseMode('featured');
 				setTimeout(() => Spotlight.focus('featured-banner'), 50);
 			} else if (settings.navbarPosition !== 'left') {
@@ -438,7 +438,7 @@ const Browse = ({
 			return;
 		}
 		scrollToRow(targetIndex, true);
-	}, [showFeaturedBar, settings.navbarPosition, scrollToRow, setBrowseMode, focusableRowFrom]);
+	}, [showFeaturedBar, featuredItems.length, settings.navbarPosition, scrollToRow, setBrowseMode, focusableRowFrom]);
 
 	filteredRowsRef.current = filteredRows;
 
