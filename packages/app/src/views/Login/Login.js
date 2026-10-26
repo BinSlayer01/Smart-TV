@@ -15,6 +15,7 @@ import {KEYS} from '../../utils/keys';
 import SpottableInput from '../../components/SpottableInput/SpottableInput';
 import {subscribeTvKeyboardVisibility} from '../../components/TVKeyboard/keyboardBus';
 import {MaterialIcon, ServerTypeIcon} from './loginIcons';
+import {forgottenPinUsername, noteProvedSignIn} from '../../utils/signInPin';
 
 import css from './Login.module.less';
 
@@ -201,7 +202,7 @@ const Login = ({
 		if (!quickConnect) focusLater(credentialFocusTarget(user));
 	}, [stopQuickConnect]);
 
-	const openServer = useCallback(async (target, {forceSignIn = false} = {}) => {
+	const openServer = useCallback(async (target, {forceSignIn = false, signInAs = null} = {}) => {
 		jellyfinApi.setServer(target.url);
 		jellyfinApi.setServerType(target.serverType || 'jellyfin');
 
@@ -210,7 +211,7 @@ const Login = ({
 		setStatus(null);
 
 		if (forceSignIn) {
-			goToSignIn(target, null);
+			goToSignIn(target, signInAs);
 			return;
 		}
 
@@ -393,6 +394,12 @@ const Login = ({
 
 		const lastServerId = activeServerInfo?.serverId;
 		const known = uniqueServers.find((entry) => entry.serverId === lastServerId);
+		// Forgot PIN lands on that account's sign in, since only its password clears the PIN.
+		const forgottenName = known ? forgottenPinUsername(known.url) : null;
+		if (forgottenName) {
+			openServer(known, {forceSignIn: true, signInAs: {name: forgottenName, hasPassword: true}});
+			return;
+		}
 		if (known) {
 			openServer(known);
 			return;
@@ -482,6 +489,7 @@ const Login = ({
 			stopQuickConnect();
 			setStatus(isAdding ? $L('Adding user...') : $L('Signing in...'));
 			const authResult = await jellyfinApi.api.authenticateQuickConnect(secret);
+			noteProvedSignIn(jellyfinApi.getServerUrl(), authResult.User?.Id);
 			const result = await loginWithToken(jellyfinApi.getServerUrl(), authResult, {
 				serverName: server?.name,
 				serverType: server?.serverType,
