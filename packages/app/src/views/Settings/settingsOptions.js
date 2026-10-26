@@ -677,7 +677,12 @@ export const getSeasonalThemeOptions = () => [
 	{ value: 'petals', label: $L('Spring Petals') },
 	{ value: 'fireflies', label: $L('Fireflies') },
 	{ value: 'leaves', label: $L('Falling Leaves') },
-	{ value: 'halloween', label: $L('Halloween') }
+	{ value: 'halloween', label: $L('Halloween') },
+	{ value: 'valentines', label: $L("Valentine's Day") },
+	{ value: 'easter', label: $L('Easter') },
+	{ value: 'pride', label: $L('Pride') },
+	{ value: 'lunar', label: $L('Lunar New Year') },
+	{ value: 'diwali', label: $L('Diwali') }
 ];
 
 export const getSeasonalDensityOptions = () => [

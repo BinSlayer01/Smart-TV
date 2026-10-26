@@ -94,7 +94,7 @@ describe('profileToLocal', () => {
 	});
 
 	test('takes the newer seasonal effects as they are', () => {
-		for (const effect of ['christmas', 'petals', 'fireflies', 'halloween']) {
+		for (const effect of ['christmas', 'petals', 'fireflies', 'halloween', 'valentines', 'easter', 'pride', 'lunar', 'diwali']) {
 			expect(profileToLocal({seasonalSurprise: effect}).seasonalTheme).toBe(effect);
 		}
 	});
