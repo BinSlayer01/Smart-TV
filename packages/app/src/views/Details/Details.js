@@ -1122,7 +1122,8 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 	);
 
 	if (settings.detailScreenStyle !== 'v1') {
-		const DetailContent = DETAIL_CONTENT[settings.detailScreenStyle] || ModernDetailContent;
+		// Spotlight, Minimalist and Nouveau have no track list, so a playlist always gets Modern's.
+		const DetailContent = (item.Type !== 'Playlist' && DETAIL_CONTENT[settings.detailScreenStyle]) || ModernDetailContent;
 		return (
 			<div className={css.page}>
 				<DetailContent
