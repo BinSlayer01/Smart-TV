@@ -1054,7 +1054,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 		? mergeMissingByReleaseOrder(collectionItems, missingCollectionItems)
 		: collectionItems;
 
-	const filmography = isPerson ? splitFilmography(similar, showsSection) : null;
+	const filmography = isPerson ? splitFilmography(similar, showsSection, settings.personPageSortOption) : null;
 	const personMovies = filmography?.movies || [];
 	const personSeries = filmography?.series || [];
 	const personDates = isPerson ? personDateLines(item.PremiereDate, item.EndDate) : [];

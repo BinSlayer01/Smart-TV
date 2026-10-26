@@ -98,6 +98,8 @@ export const defaultSettings = {
 	displayAudioArtists: true,
 	displayAudioAlbums: true,
 	audioSortOption: 'name',
+	personPageSortOption: 'alphabetical',
+	personPageGroupItems: false,
 	customHomeRows: [],
 	recentlyReleasedSeriesType: 'series',
 	mergeRadarrSonarrCalendars: false,

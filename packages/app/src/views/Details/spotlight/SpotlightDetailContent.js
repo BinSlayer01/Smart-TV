@@ -17,7 +17,7 @@ import ModernActionButtons from '../ModernActionButtons';
 import {KEYS} from '../../../utils/keys';
 import {spotlightCardsFor, spotlightCardFor} from './spotlightCards';
 import {studioCardsFor, studioLogoIndex} from '../studioLogos';
-import {loadSeerrPersonCredits} from '../seerrPersonCredits';
+import {loadSeerrPersonCredits, seerrPersonCards} from '../seerrPersonCredits';
 import {spotlightMetaPieces} from './spotlightMeta';
 import {spotlightCardFallbackUrl} from './spotlightImages';
 import {fetchUpcomingEpisode, formatUpcomingEpisode} from '../../../utils/upcomingEpisode';
@@ -45,6 +45,7 @@ const SCRIM = [
 
 // Shared so an item with no credits does not hand the memo a new array each render.
 const EMPTY_LIST = [];
+const NO_SEERR_CREDITS = {cast: [], crew: []};
 
 const SpotlightDetailContent = (props) => {
 	const {
@@ -65,7 +66,7 @@ const SpotlightDetailContent = (props) => {
 	const {isEnabled: seerrEnabled} = useSeerr();
 	const [openCardId, setOpenCardId] = useState(null);
 	const [tmdbCompanies, setTmdbCompanies] = useState(null);
-	const [seerrCredits, setSeerrCredits] = useState({appearances: [], crewCredits: []});
+	const [seerrCredits, setSeerrCredits] = useState(NO_SEERR_CREDITS);
 	const [viewport, setViewport] = useState(() => ({
 		width: typeof window === 'undefined' ? 1920 : window.innerWidth,
 		height: typeof window === 'undefined' ? 1080 : window.innerHeight
@@ -111,7 +112,7 @@ const SpotlightDetailContent = (props) => {
 	useEffect(() => {
 		let cancelled = false;
 		const tmdbId = item.ProviderIds?.Tmdb;
-		setSeerrCredits({appearances: [], crewCredits: []});
+		setSeerrCredits(NO_SEERR_CREDITS);
 		if (!isPerson || !tmdbId || !seerrEnabled) return undefined;
 		loadSeerrPersonCredits(tmdbId)
 			.then((credits) => {
@@ -131,6 +132,10 @@ const SpotlightDetailContent = (props) => {
 	// A person's filmography is rebuilt on every render, so the list itself is what the memo
 	// below watches rather than the object holding it.
 	const otherCredits = filmography?.guestAppearances || EMPTY_LIST;
+	const {seerrAppearances, seerrCrewCredits} = useMemo(() => ({
+		seerrAppearances: seerrPersonCards(seerrCredits.cast, false, settings),
+		seerrCrewCredits: seerrPersonCards(seerrCredits.crew, true, settings)
+	}), [seerrCredits, settings]);
 	// A collection's play order sorts the same way it does in Modern and Nouveau.
 	const isBoxSet = item.Type === 'BoxSet';
 	const collectionSort = useCollectionSort(isBoxSet ? effectiveApi : null, item.Id, isBoxSet ? playlistItems : EMPTY_LIST);
@@ -152,7 +157,7 @@ const SpotlightDetailContent = (props) => {
 		collectionItems, missingCollectionItems, parentCollections,
 		albumTracks, artistAlbums, playlistItems: shownPlaylistItems, playlistSort,
 		personMovies, personSeries, filmography: otherCredits,
-		seerrAppearances: seerrCredits.appearances, seerrCrewCredits: seerrCredits.crewCredits,
+		seerrAppearances, seerrCrewCredits,
 		studioCards, canManagePlaylist,
 		seerr: {
 			details: seerr.details,
@@ -169,7 +174,7 @@ const SpotlightDetailContent = (props) => {
 		item, effectiveServerUrl, settings, showsSection, seerrOnly, mediaSource, seasons, episodes, seriesEpisodes, similar, similarSource, reviews,
 		extras, cast, crew, nextUp, collectionItems, missingCollectionItems, parentCollections,
 		albumTracks, artistAlbums, shownPlaylistItems, playlistSort, personMovies, personSeries, otherCredits,
-		seerrCredits, studioCards, canManagePlaylist, cardFallbackImageUrl,
+		seerrAppearances, seerrCrewCredits, studioCards, canManagePlaylist, cardFallbackImageUrl,
 		seerr.recommendationCards, seerr.similarCards, seerr.details, seerr.mediaType, seerr.collection, seerr.seasonMarkers,
 		seerr.pieces.chips, seerr.pieces.facts, seerr.pieces.streaming, seerr.streamingProviders
 	]);

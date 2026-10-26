@@ -16,11 +16,12 @@ import NouveauPosterCard from './cards/NouveauPosterCard';
 import NouveauLandscapeCard from './cards/NouveauLandscapeCard';
 import DetailsTabBar from '../../../components/DetailsTabBar';
 import NouveauSortDialog from './sections/NouveauSortDialog';
+import PersonDisplayDialog from '../PersonDisplayDialog';
 import NouveauDetailsFooter from './footer/NouveauDetailsFooter';
 import {buildDiscoveryRails} from './nouveauDiscovery';
 import {buildPersonRails} from './nouveauPersonRails';
 import {splitFilmography} from '../../../utils/personCredits';
-import {loadSeerrPersonCredits} from '../seerrPersonCredits';
+import {loadSeerrPersonCredits, seerrPersonCards} from '../seerrPersonCredits';
 import {useSeerr} from '../../../context/SeerrContext';
 import {
 	HERO, buildNouveauChain, clampNouveauNode, nextNouveauNode, spotlightIdForNouveauNode
@@ -70,7 +71,7 @@ const SMOOTH_SCROLL = typeof document !== 'undefined' && 'scrollBehavior' in doc
 const findIn = (list, key) => list.find((candidate) => String(candidate.Id) === key);
 
 // One value to reset to, so an item with no Seerr credits leaves the rails memo alone.
-const NO_PERSON_CREDITS = {appearances: [], crewCredits: []};
+const NO_PERSON_CREDITS = {cast: [], crew: []};
 
 const NouveauDetailContent = (props) => {
 	const {
@@ -87,6 +88,9 @@ const NouveauDetailContent = (props) => {
 	const {isEnabled: seerrEnabled} = useSeerr();
 	const parentCollectionCount = collectionSections.length;
 	const [personCredits, setPersonCredits] = useState(NO_PERSON_CREDITS);
+	const [displayOpen, setDisplayOpen] = useState(false);
+	const openPersonDisplay = useCallback(() => setDisplayOpen(true), []);
+	const closePersonDisplay = useCallback(() => setDisplayOpen(false), []);
 
 	// Seerr is an extra on a person page, so a failure leaves the rails the library can fill.
 	// Neither list is asked for when the viewer hid both.
@@ -112,11 +116,11 @@ const NouveauDetailContent = (props) => {
 	// items, so it never gets a stop.
 	const personRails = useMemo(
 		() => (isPerson ? buildPersonRails({
-			filmography: splitFilmography(similar, showsSection),
-			appearances: showsSeerrAppearances ? personCredits.appearances : [],
-			crewCredits: showsSeerrCrew ? personCredits.crewCredits : []
+			filmography: splitFilmography(similar, showsSection, settings.personPageSortOption),
+			appearances: showsSeerrAppearances ? seerrPersonCards(personCredits.cast, false, settings) : [],
+			crewCredits: showsSeerrCrew ? seerrPersonCards(personCredits.crew, true, settings) : []
 		}) : []),
-		[isPerson, similar, personCredits, showsSection, showsSeerrAppearances, showsSeerrCrew]
+		[isPerson, similar, personCredits, showsSection, showsSeerrAppearances, showsSeerrCrew, settings]
 	);
 
 	const [windowWidth, setWindowWidth] = useState(
@@ -423,6 +427,10 @@ const NouveauDetailContent = (props) => {
 				closeSort();
 				return true;
 			}
+			if (displayOpen) {
+				closePersonDisplay();
+				return true;
+			}
 			if (overviewBackRef?.current?.()) return true;
 
 			const scroller = scrollerRef.current;
@@ -441,7 +449,7 @@ const NouveauDetailContent = (props) => {
 		return () => {
 			if (spotlightBackRef.current === handler) spotlightBackRef.current = null;
 		};
-	}, [spotlightBackRef, overviewBackRef, sortOpen, closeSort]);
+	}, [spotlightBackRef, overviewBackRef, sortOpen, closeSort, displayOpen, closePersonDisplay]);
 
 	const renderSection = (id) => {
 		if (id === SECTION_CHAPTERS) {
@@ -806,6 +814,7 @@ const NouveauDetailContent = (props) => {
 						<NouveauHero
 							{...props}
 							menuBackRef={menuBackRef}
+							onOpenPersonDisplay={isPerson ? openPersonDisplay : null}
 							onNavigateUp={handleNavigateUp}
 							onNavigateDown={handleNavigateDown}
 						/>
@@ -830,6 +839,7 @@ const NouveauDetailContent = (props) => {
 					onClose={closeSort}
 				/>
 			)}
+			{displayOpen && <PersonDisplayDialog onClose={closePersonDisplay} />}
 		</>
 	);
 };
