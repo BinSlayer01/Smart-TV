@@ -48,7 +48,7 @@ const MakdBanner = memo(({
 
 	const {trailerActive, trailerHolding, trailerContainerRef} = useTrailerPreview({
 		currentItem: currentFeatured,
-		isVisible: isVisible && browseVisible,
+		isVisible: isVisible && browseVisible && featuredFocused,
 		enabled: settingsLoaded && settings.featuredTrailerPreview,
 		preferMuted: settings.featuredTrailerMuted,
 		volume: settings.trailerVolume,

@@ -53,8 +53,9 @@ const FeaturedBanner = memo(({
 	const {trailerActive, trailerHolding, trailerContainerRef} = useTrailerPreview({
 		currentItem: currentFeatured,
 		// The banner stays mounted behind the settings overlay so the hero keeps its
-		// place, but the trailer has to stop or it plays on underneath it.
-		isVisible: isVisible && browseVisible,
+		// place, but the trailer has to stop or it plays on underneath it. A trailer hides
+		// the navbar too, so it only plays while the bar itself has focus.
+		isVisible: isVisible && browseVisible && featuredFocused,
 		enabled: settingsLoaded && settings.featuredTrailerPreview,
 		preferMuted: settings.featuredTrailerMuted,
 		volume: settings.trailerVolume,

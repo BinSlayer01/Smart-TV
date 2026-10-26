@@ -57,7 +57,7 @@ const AyaBanner = memo(({
 
 	const {trailerContainerRef, trailerHolding} = useTrailerPreview({
 		currentItem: currentFeatured,
-		isVisible: isVisible && browseVisible,
+		isVisible: isVisible && browseVisible && featuredFocused,
 		enabled: settingsLoaded && settings.featuredTrailerPreview,
 		preferMuted: settings.featuredTrailerMuted,
 		volume: settings.trailerVolume,
