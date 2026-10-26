@@ -312,6 +312,8 @@ const AppContent = (props) => {
 	const detailsItemStackRef = useRef([]);
 	// Play from a card's menu opens the item's screen, which starts it once it knows what to play.
 	const [detailsAutoPlay, setDetailsAutoPlay] = useState(false);
+	// A Smart Hub tile that opened the app, held until there's someone signed in to open it for.
+	const [deepLink, setDeepLink] = useState(null);
 	const [seerrCollection, setSeerrCollection] = useState(null);
 	const prevUserIdRef = useRef(null);
 	const [photoViewerItem, setPhotoViewerItem] = useState(null);
@@ -974,6 +976,21 @@ const AppContent = (props) => {
 	}, [handleSelectItem]);
 
 	const handleAutoPlayed = useCallback(() => setDetailsAutoPlay(false), []);
+
+	useEffect(() => {
+		const onDeepLink = (e) => setDeepLink(e.detail || null);
+		window.addEventListener('moonfin:deepLink', onDeepLink);
+		return () => window.removeEventListener('moonfin:deepLink', onDeepLink);
+	}, []);
+
+	// The tiles are Continue Watching and Next Up, so they go where those cards go on Home. A tile
+	// left from another server is dropped.
+	useEffect(() => {
+		if (!deepLink?.id || !isAuthenticated || !settingsLoaded || !user || pinPending || timesUp) return;
+		setDeepLink(null);
+		if (deepLink.serverId && user.ServerId && deepLink.serverId !== user.ServerId) return;
+		handleSelectItem({Id: deepLink.id, Type: deepLink.type === 'episode' ? 'Episode' : 'Movie'}, settings.continueWatchingDefaultAction === 'play');
+	}, [deepLink, isAuthenticated, settingsLoaded, user, pinPending, timesUp, handleSelectItem, settings.continueWatchingDefaultAction]);
 
 	const handleViewPhoto = useCallback((item, siblings) => {
 		setPhotoViewerItem(item);
