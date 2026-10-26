@@ -270,6 +270,11 @@ const formatCalendarDate = (dateStr) => {
 	return d.toLocaleDateString(uiLocale(), {month: 'short', day: 'numeric'});
 };
 
+// Radarr gives a release as midnight UTC on its day, which is the day before anywhere west of
+// UTC, so the day is read as it's written.
+const releaseDay = (date) => new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 const arrGet = async (url) => {
 	try {
 		const res = await fetchWithTimeout(url, {}, 5000);
@@ -302,7 +307,9 @@ const fetchRadarrItems = async (settings) => {
 		if (settings.radarrCalendarShowCinema && m.inCinemas) dates.push(m.inCinemas);
 		if (settings.radarrCalendarShowDigital && m.digitalRelease) dates.push(m.digitalRelease);
 		if (settings.radarrCalendarShowPhysical && m.physicalRelease) dates.push(m.physicalRelease);
-		const upcoming = dates.map((d) => new Date(d)).filter((d) => !Number.isNaN(d.getTime()) && d >= new Date());
+		// A release stays on the row through its own day.
+		const since = Date.now() - DAY_MS;
+		const upcoming = dates.map((d) => new Date(d)).filter((d) => !Number.isNaN(d.getTime()) && d.getTime() > since);
 		if (!upcoming.length) continue;
 		const soonest = upcoming.sort((a, b) => a - b)[0];
 		const tmdbId = m.tmdbId ? String(m.tmdbId) : null;
@@ -318,7 +325,7 @@ const fetchRadarrItems = async (settings) => {
 			releaseType = $L('Physical: ');
 		}
 
-		const dateStr = settings.radarrCalendarShowDate ? formatCalendarDate(soonest.toISOString()) : '';
+		const dateStr = settings.radarrCalendarShowDate ? formatCalendarDate(releaseDay(soonest)) : '';
 		const subtitle = dateStr ? `${releaseType}${dateStr}` : '';
 		const fanart = m.images?.find((i) => i.coverType === 'fanart');
 
