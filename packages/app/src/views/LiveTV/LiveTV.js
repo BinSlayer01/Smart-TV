@@ -712,6 +712,7 @@ const LiveTV = ({onPlayChannel, onRecordings, backHandlerRef}) => {
 		} else if (code === KEYS.LEFT) {
 			consume();
 			onNavigationKey();
+			focusWhenMounted(chipSpotlightId(0));
 		}
 	}, [focusChannelRow, focusProgramFromChannel, focusWindowBar, rowsPerViewport]);
 
