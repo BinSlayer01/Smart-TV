@@ -55,7 +55,7 @@ import ReviewDialog from './ReviewDialog';
 import PersonalRatingDialog from '../../components/PersonalRatingDialog';
 import {clampRating, clearedRatingPatch, isRatableItemType, normalizeRatingStyle, numericRatingPatch, thumbRatingPatch} from '../../utils/personalRating';
 import {personCalendarDate, personDateLines, splitFilmography} from '../../utils/personCredits';
-import {mergeCollectionWithMissing} from './seerrMissingCollectionItems';
+import {mergeCollectionWithMissing, mergeMissingByReleaseOrder} from './seerrMissingCollectionItems';
 import ClassicDetailScreen from './ClassicDetailScreen';
 import SpotlightDetailContent from './spotlight/SpotlightDetailContent';
 import NouveauDetailContent from './nouveau/NouveauDetailContent';
@@ -72,6 +72,8 @@ import css from './Details.module.less';
 // Every style past Classic takes the same contract, so the setting only decides which of them
 // draws the screen.
 const DETAIL_CONTENT = {v3: SpotlightDetailContent, v4: NouveauDetailContent, v5: MinimalistDetailContent};
+// The missing titles already ride in the list a collection's page is handed.
+const NO_ITEMS = [];
 
 const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelectPerson, onSelectStudio, onItemDeleted, autoPlay, onAutoPlayed, seerrNav, backHandlerRef}) => {
 	const {api, serverUrl, user} = useAuth();
@@ -1036,12 +1038,21 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 	const hasPlaybackPosition = item.UserData?.PlaybackPositionTicks > 0;
 	const resumeTimeText = hasPlaybackPosition ? formatDuration(item.UserData.PlaybackPositionTicks) : '';
 
-	// Modern and Classic list each collection with its missing titles merged in.
+	const showsMissingTitles = settings.seerrShowMissingCollectionItems !== false;
+	// Modern and Classic list each collection led by the collection itself, so there's a way into
+	// it, with its missing titles merged in.
 	const collectionSections = shownParentCollections.map((collection) => ({
 		id: collection.id,
 		name: collection.name,
-		items: mergeCollectionWithMissing(collection.items, collection.missingItems)
+		items: [
+			collection.boxSetItem,
+			...(showsMissingTitles ? mergeCollectionWithMissing(collection.items || [], collection.missingItems) : (collection.items || []))
+		].filter(Boolean)
 	}));
+	// A collection's own page slots its missing titles in by release date in every style.
+	const shownCollectionItems = isBoxSet && showsMissingTitles
+		? mergeMissingByReleaseOrder(collectionItems, missingCollectionItems)
+		: collectionItems;
 
 	const filmography = isPerson ? splitFilmography(similar, showsSection) : null;
 	const personMovies = filmography?.movies || [];
@@ -1176,7 +1187,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 					cast={detailCast}
 					crew={detailCrew}
 					nextUp={shownNextUp}
-					collectionItems={collectionItems}
+					collectionItems={shownCollectionItems}
 					collectionSections={collectionSections}
 					albumTracks={albumTracks}
 					artistAlbums={artistAlbums}
@@ -1222,7 +1233,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 					similarLoaded={shownSimilarLoaded}
 					reviews={reviews.reviews}
 					onSelectReview={reviews.handleSelectReview}
-					missingCollectionItems={missingCollectionItems}
+					missingCollectionItems={NO_ITEMS}
 					parentCollections={shownParentCollections}
 					loadMoreCollectionItems={loadMoreCollectionItems}
 					collectionMenu={collectionMenu}
@@ -1444,7 +1455,7 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 				episodeRatings={episodeRatings}
 				nextUp={shownNextUp}
 				nextEpisode={shownNextEpisode}
-				collectionItems={collectionItems}
+				collectionItems={shownCollectionItems}
 				extras={shownExtras}
 				cast={detailCast}
 				crew={detailCrew}

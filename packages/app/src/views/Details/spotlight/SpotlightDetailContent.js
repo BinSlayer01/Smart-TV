@@ -27,6 +27,9 @@ import SpotlightSummaryCard from './SpotlightSummaryCard';
 import SpotlightSectionModal from './SpotlightSectionModal';
 import {scrimStyle} from '../../../utils/scrimImage';
 
+import useCollectionSort from '../useCollectionSort';
+import {sortLabel} from '../nouveau/nouveauCollectionSort';
+import NouveauSortDialog from '../nouveau/sections/NouveauSortDialog';
 import css from './SpotlightDetailContent.module.less';
 
 const BandContainer = SpotlightContainerDecorator({enterTo: 'last-focused'}, 'div');
@@ -128,6 +131,15 @@ const SpotlightDetailContent = (props) => {
 	// A person's filmography is rebuilt on every render, so the list itself is what the memo
 	// below watches rather than the object holding it.
 	const otherCredits = filmography?.guestAppearances || EMPTY_LIST;
+	// A collection's play order sorts the same way it does in Modern and Nouveau.
+	const isBoxSet = item.Type === 'BoxSet';
+	const collectionSort = useCollectionSort(isBoxSet ? effectiveApi : null, item.Id, isBoxSet ? playlistItems : EMPTY_LIST);
+	const shownPlaylistItems = isBoxSet ? collectionSort.sorted : playlistItems;
+	const {openSort: openCollectionSort, sortOption: collectionSortOption} = collectionSort;
+	const playlistSort = useMemo(
+		() => (isBoxSet ? {label: sortLabel(collectionSortOption), open: openCollectionSort} : null),
+		[isBoxSet, collectionSortOption, openCollectionSort]
+	);
 
 	const cardFallbackImageUrl = useMemo(
 		() => spotlightCardFallbackUrl(effectiveServerUrl, item, backdropUrl),
@@ -138,7 +150,7 @@ const SpotlightDetailContent = (props) => {
 		item, serverUrl: effectiveServerUrl, settings, showsSection, seerrOnly, mediaSource,
 		seasons, episodes, seriesEpisodes, similar, similarSource, reviews, extras, cast, crew, nextUp,
 		collectionItems, missingCollectionItems, parentCollections,
-		albumTracks, artistAlbums, playlistItems,
+		albumTracks, artistAlbums, playlistItems: shownPlaylistItems, playlistSort,
 		personMovies, personSeries, filmography: otherCredits,
 		seerrAppearances: seerrCredits.appearances, seerrCrewCredits: seerrCredits.crewCredits,
 		studioCards, canManagePlaylist,
@@ -156,7 +168,7 @@ const SpotlightDetailContent = (props) => {
 	}), [
 		item, effectiveServerUrl, settings, showsSection, seerrOnly, mediaSource, seasons, episodes, seriesEpisodes, similar, similarSource, reviews,
 		extras, cast, crew, nextUp, collectionItems, missingCollectionItems, parentCollections,
-		albumTracks, artistAlbums, playlistItems, personMovies, personSeries, otherCredits,
+		albumTracks, artistAlbums, shownPlaylistItems, playlistSort, personMovies, personSeries, otherCredits,
 		seerrCredits, studioCards, canManagePlaylist, cardFallbackImageUrl,
 		seerr.recommendationCards, seerr.similarCards, seerr.details, seerr.mediaType, seerr.collection, seerr.seasonMarkers,
 		seerr.pieces.chips, seerr.pieces.facts, seerr.pieces.streaming, seerr.streamingProviders
@@ -257,6 +269,10 @@ const SpotlightDetailContent = (props) => {
 		if (!spotlightBackRef) return undefined;
 		spotlightBackRef.current = () => {
 			if (menuBackRef.current?.()) return true;
+			if (collectionSort.sortOpen) {
+				collectionSort.closeSort();
+				return true;
+			}
 			if (!openCardId) return false;
 			handleCloseModal();
 			return true;
@@ -426,6 +442,14 @@ const SpotlightDetailContent = (props) => {
 				// time. The Movies and Shows grid is fetched whole, so it has nothing to ask for.
 				onNearEnd={openCardId === 'playlist_order' ? cardActions.loadMoreCollectionItems : null}
 			/>
+			{collectionSort.sortOpen && (
+				<NouveauSortDialog
+					options={collectionSort.sortOptions}
+					active={collectionSort.sortOption}
+					onSelect={collectionSort.chooseSort}
+					onClose={collectionSort.closeSort}
+				/>
+			)}
 		</>
 	);
 };

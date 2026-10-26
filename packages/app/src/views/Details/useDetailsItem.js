@@ -330,7 +330,7 @@ const useDetailsItem = ({itemId, initialItem, effectiveApi, effectiveServerUrl, 
 				const needsSimilar = data.Type !== 'Person' && data.Type !== 'BoxSet' &&
 					data.Type !== 'MusicAlbum' && data.Type !== 'MusicArtist' && data.Type !== 'Playlist';
 				const needsExtras = data.Type === 'Movie' || data.Type === 'Episode' || data.Type === 'Video';
-				const needsBoxSet = data.Type === 'Movie' || data.Type === 'Video';
+				const needsBoxSet = data.Type === 'Movie' || data.Type === 'Video' || data.Type === 'Series';
 
 				// Moonfin is only asked where the server said it can score, since
 				// otherwise every open pays a failed request before the stock row.

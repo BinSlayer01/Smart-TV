@@ -1,5 +1,6 @@
-import {useCallback} from 'react';
+import {useCallback, useEffect} from 'react';
 import $L from '@enact/i18n/$L';
+import Spotlight from '@enact/spotlight';
 
 import {ModalContainer} from '../../../../utils/spotlightContainers';
 import TrackOptionRow from '../../../../components/TrackOptionRow';
@@ -11,6 +12,15 @@ import css from './NouveauSections.module.less';
 const NouveauSortDialog = ({options = [], active, onSelect, onClose}) => {
 	// The backdrop closes the dialog, so a press inside it must not travel out to that.
 	const stopPropagation = useCallback((ev) => ev.stopPropagation(), []);
+
+	// The remote moves into the picker as it opens and back to whatever opened it once it closes.
+	useEffect(() => {
+		const opener = Spotlight.getCurrent();
+		Spotlight.focus('nouveau-sort-modal');
+		return () => {
+			if (opener && document.body.contains(opener)) Spotlight.focus(opener);
+		};
+	}, []);
 
 	const handleClick = useCallback((ev) => {
 		const id = ev.currentTarget.dataset.sortId;
