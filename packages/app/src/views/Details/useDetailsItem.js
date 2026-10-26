@@ -3,7 +3,7 @@ import $L from '@enact/i18n/$L';
 
 import * as playback from '../../services/playback';
 import {fetchTmdbSeasonRatings, resolveSeriesTmdbId, isRatingSourceAllowed} from '../../services/mdblistApi';
-import {getSeriesAudioPref} from '../../services/subtitlePrefs';
+import {getItemAudioPref, getSeriesAudioPref} from '../../services/subtitlePrefs';
 import {fromServerStream, matchSeriesTrackIndex} from '../../utils/seriesTrackPrefs';
 import {detailsSubtitlePosition} from '../Player/initialSubtitle';
 import {findParentCollections} from './parentCollection';
@@ -203,12 +203,13 @@ const useDetailsItem = ({itemId, initialItem, effectiveApi, effectiveServerUrl, 
 			const ms = data.MediaSources?.[0];
 			if (ms) {
 				const initAudioStreams = ms.MediaStreams?.filter(s => s.Type === 'Audio') || [];
-				// A track remembered for the series shows as active, and only when there
-				// is none does the server's own default stand in.
+				// A track remembered for the title or its series shows as active, and only
+				// when there is none does the server's own default stand in.
+				const itemAudioPref = await getItemAudioPref(data.Id);
 				const seriesAudioPref = data.SeriesId ? await getSeriesAudioPref(data.SeriesId) : undefined;
-				const matchedAudio = seriesAudioPref
-					? matchSeriesTrackIndex(initAudioStreams.map(fromServerStream), seriesAudioPref)
-					: null;
+				const matchedAudio = initAudioStreams.some((s) => s.Index === itemAudioPref)
+					? itemAudioPref
+					: (seriesAudioPref ? matchSeriesTrackIndex(initAudioStreams.map(fromServerStream), seriesAudioPref) : null);
 				const rememberedAudioPos = matchedAudio !== null && matchedAudio >= 0
 					? initAudioStreams.findIndex(s => s.Index === matchedAudio)
 					: -1;

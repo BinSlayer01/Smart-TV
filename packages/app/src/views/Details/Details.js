@@ -9,6 +9,8 @@ import {useSettings} from '../../context/SettingsContext';
 import {useSeerr} from '../../context/SeerrContext';
 import {useSyncPlay} from '../../context/SyncPlayContext';
 import * as jellyfinApi from '../../services/jellyfinApi';
+import {saveAudioPref, saveSubtitlePref} from '../../services/subtitlePrefs';
+import {fromServerStream} from '../../utils/seriesTrackPrefs';
 import ModernDetailContent from './ModernDetailContent';
 import DetailSkeleton from './DetailSkeleton';
 import {formatDuration, getImageUrl, getBackdropId, getLogoUrl} from '../../utils/helpers';
@@ -567,21 +569,31 @@ const Details = ({itemId: itemIdProp, initialItem, onPlay, onSelectItem, onSelec
 	const playLongPress = useLongPress(offersStreamOptions ? modals.handleAdvancedPlay : null, handlePlay);
 	const resumeLongPress = useLongPress(offersStreamOptions ? modals.handleAdvancedResume : null, handleResume);
 
+	// A pick made here is remembered for the title, and an episode's for its series as well.
+	const pickedStreams = useCallback((type) => {
+		const source = item?.MediaSources?.[selectedVersionIndex] || item?.MediaSources?.[0];
+		return source?.MediaStreams?.filter((stream) => stream.Type === type) || [];
+	}, [item, selectedVersionIndex]);
+
 	const handleSelectAudio = useCallback((e) => {
 		const index = parseInt(e.currentTarget.dataset.index, 10);
 		if (isNaN(index)) return;
 		audioChosenRef.current = true;
 		setSelectedAudioIndex(index);
+		const streams = pickedStreams('Audio');
+		if (streams[index]) saveAudioPref(item, streams[index].Index, streams.map(fromServerStream));
 		closeModal();
-	}, [closeModal, setSelectedAudioIndex]);
+	}, [closeModal, setSelectedAudioIndex, pickedStreams, item]);
 
 	const handleSelectSubtitle = useCallback((e) => {
 		const index = parseInt(e.currentTarget.dataset.index, 10);
 		if (isNaN(index)) return;
 		subtitleChosenRef.current = true;
 		setSelectedSubtitleIndex(index);
+		const streams = pickedStreams('Subtitle');
+		saveSubtitlePref(item, streams[index] ? streams[index].Index : -1, streams.map(fromServerStream));
 		closeModal();
-	}, [closeModal, setSelectedSubtitleIndex]);
+	}, [closeModal, setSelectedSubtitleIndex, pickedStreams, item]);
 
 	const handleOpenRemoteSubtitleSearch = useCallback(async () => {
 		if (!item?.Id) return;
