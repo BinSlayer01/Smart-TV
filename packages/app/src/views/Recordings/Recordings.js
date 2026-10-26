@@ -72,7 +72,13 @@ const Card = memo(({payload, imageUrl, title, subtitle, isSeries, isRecording, o
 	const handleFocus = useCallback((e) => {
 		if (pointerHover()) return;
 		const el = e.currentTarget || e.target;
-		if (el) el.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'nearest'});
+		if (!el) return;
+		el.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'nearest'});
+		// Scrolling only the card would leave its row's title above the top edge on the way up. A
+		// row taller than the list keeps the card in view instead.
+		const row = el.closest(`.${css.row}`);
+		const list = row && row.closest(`.${css.body}`);
+		if (list && row.offsetHeight <= list.clientHeight) row.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 	}, []);
 
 	const handleImgError = useCallback(() => setImgFailed(true), []);
@@ -268,17 +274,24 @@ const Recordings = ({onPlayRecording, onBack, backHandlerRef}) => {
 		}
 	}, [api, selectedItem]);
 
+	// A series rule decides which showings are booked, so the schedule is read again once it changes.
+	const reloadTimers = useCallback(() => api.getLiveTvTimers().then((result) => {
+		const now = Date.now();
+		setTimers((result?.Items || []).filter((timer) => isUpcomingTimer(timer, now)));
+	}, () => {}), [api]);
+
 	const handleCancelSelectedSeriesTimer = useCallback(async () => {
 		if (selectedItem?.item?.Id) {
 			try {
 				await api.cancelLiveTvSeriesTimer(selectedItem.item.Id);
 				setSeriesTimers(prev => prev.filter(s => s.Id !== selectedItem.item.Id));
+				reloadTimers();
 				setSelectedItem(null);
 			} catch (err) {
 				console.error('Failed to cancel series timer:', err);
 			}
 		}
-	}, [api, selectedItem]);
+	}, [api, reloadTimers, selectedItem]);
 
 	const handleClosePopup = useCallback(() => {
 		setSelectedItem(null);
@@ -304,13 +317,14 @@ const Recordings = ({onPlayRecording, onBack, backHandlerRef}) => {
 			try {
 				await api.updateLiveTvSeriesTimer(rule.Id, updated);
 				setSeriesTimers(prev => prev.map(s => (s.Id === rule.Id ? updated : s)));
+				reloadTimers();
 			} catch (err) {
 				console.error('Failed to update series timer:', err);
 				return;
 			}
 		}
 		setSelectedItem(null);
-	}, [api, selectedItem]);
+	}, [api, reloadTimers, selectedItem]);
 
 	const renderRecordingCard = useCallback((recording) => (
 		<Card
