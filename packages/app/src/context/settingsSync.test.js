@@ -324,6 +324,15 @@ describe('the backdrop toggles', () => {
 		expect(localToProfile({...defaultSettings, showHomeBackdrop: false}, ['showHomeBackdrop']))
 			.toEqual({homeBackdropEnabled: false});
 	});
+
+	test('the home backdrop style travels under its own key beside the switch', () => {
+		expect(SYNCABLE_KEYS).toContain('homeBackdropStyle');
+		expect(defaultSettings.homeBackdropStyle).toBe('fullScreen');
+		expect(localToProfile({...defaultSettings, homeBackdropStyle: 'corner'}, ['showHomeBackdrop', 'homeBackdropStyle']))
+			.toEqual({homeBackdropEnabled: true, homeBackdropStyle: 'corner'});
+		expect(profileToLocal({homeBackdropEnabled: true, homeBackdropStyle: 'corner'}))
+			.toEqual({showHomeBackdrop: true, homeBackdropStyle: 'corner'});
+	});
 });
 
 describe('the library style', () => {

@@ -227,6 +227,12 @@ export const getHomeRowsStyleOptions = () => [
 	{ value: 'v1', label: $L('Classic') }
 ];
 
+export const getHomeBackdropStyleOptions = () => [
+	{ value: 'off', label: $L('Off') },
+	{ value: 'fullScreen', label: $L('Full Screen') },
+	{ value: 'corner', label: $L('Corner') }
+];
+
 export const getMediaPreviewModeOptions = () => [
 	{ value: 'off', label: $L('Off') },
 	{ value: 'media', label: $L('Media Preview') },

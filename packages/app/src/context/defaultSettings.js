@@ -144,6 +144,7 @@ export const defaultSettings = {
 	hiddenContinueWatchingItems: null,
 	hiddenNextUpSeries: null,
 	showHomeBackdrop: true,
+	homeBackdropStyle: 'fullScreen',
 	detailsBackdropEnabled: true,
 	backdropBlurHome: 20,
 	backdropBlurDetail: 20,

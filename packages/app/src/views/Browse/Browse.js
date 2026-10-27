@@ -33,6 +33,7 @@ import useExternalRows from './useExternalRows';
 import useMediaPreview from './useMediaPreview';
 import {buildBrowseRows, sameRowList} from './buildBrowseRows';
 import {markHomeReady} from '../../utils/homeReady';
+import {homeBackdropStyle} from '../../utils/homeBackdropStyle';
 import {rem} from '../../utils/rootScale';
 import {rowImageType, rowPeekHeight} from './rowPeek';
 
@@ -773,6 +774,7 @@ const Browse = ({
 				<BackdropLayer
 					targetUrl={targetBackdropUrl}
 					blurAmount={settings.backdropBlurHome}
+					inCorner={homeBackdropStyle(settings) === 'corner'}
 				/>
 
 				{featuredItems.length > 0 && showFeaturedBar !== false && (

@@ -284,7 +284,7 @@ export const SYNCABLE_KEYS = [
 	'musicPlaybackTimeDisplay', 'liveTvChannelSortBy',
 	'autoPlay', 'nextUpBehavior', 'nextUpTimeout', 'nextUpCountdownStyle',
 	'replaceSkipOutroWithNextUp',
-	'showHomeBackdrop', 'detailsBackdropEnabled', 'backdropBlurHome', 'backdropBlurDetail',
+	'showHomeBackdrop', 'homeBackdropStyle', 'detailsBackdropEnabled', 'backdropBlurHome', 'backdropBlurDetail',
 	'mediaBarSourceType', 'mediaBarLibraryIds', 'mediaBarCollectionIds', 'mediaBarExternalLists',
 	'mediaBarOverlayColor', 'mediaBarOverlayOpacity',
 	'homeRows', 'homeRowsStyle', 'modernCardsOnMyMediaRow', 'detailScreenStyle', 'detailExpandedTabs', 'fullScreenRows', 'homeRowsPosterSize', 'useSeriesThumbnails',
