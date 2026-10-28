@@ -43,6 +43,9 @@ import nouveauFooterCss from '../views/Details/nouveau/footer/NouveauDetailsFoot
 import nouveauSectionsCss from '../views/Details/nouveau/sections/NouveauSections.module.less';
 import trackListCss from '../components/DetailTrackList/DetailTrackList.module.less';
 import musicCss from '../views/MusicBrowse/MusicLibrary.module.less';
+import musicScreensCss from '../views/MusicBrowse/MusicScreens.module.less';
+import musicFilterCss from '../views/MusicBrowse/MusicFilterPanel.module.less';
+import musicChipsCss from '../views/MusicBrowse/MusicChips.module.less';
 import overviewCss from '../views/Details/ExpandableOverview.module.less';
 import tabBarCss from '../components/DetailsTabBar/DetailsTabBar.module.less';
 import backdropCss from '../components/BackdropLayer/BackdropLayer.module.less';
@@ -430,6 +433,47 @@ export const buildThemeOverrideCss = (theme, options = {}) => {
 	rule(`.${musicCss.track}:focus`, `background: ${buttonFocused}; border-color: ${accentA(0.72)};`);
 	rule(`.${musicCss.track}:focus .${musicCss.trackTitle}`, `color: ${invertedStrong};`);
 	rule(`.${musicCss.track}:focus .${musicCss.trackNumber}, .${musicCss.track}:focus .${musicCss.trackSubtitle}, .${musicCss.track}:focus .${musicCss.trackLength}`, `color: ${invertedSoft};`);
+	rule(`.${musicCss.trackRank}`, `color: ${accent};`);
+
+	// The music category screens. The genre stations and the mix cards other than Everything keep
+	// their own palette with white text.
+	const ms = musicScreensCss;
+	rule(`.${ms.page}`, `background: ${background}; color: ${onSurface};`);
+	rule(`.${ms.stripName}, .${ms.title}, .${ms.panelTitle}, .${ms.detailTitle}, .${ms.playlistRow}`, `color: ${onSurface};`);
+	rule(`.${ms.count}, .${ms.subMeta}`, `color: ${os(0.65)};`);
+	rule(`.${ms.meta}`, `color: ${os(0.75)};`);
+	rule(`.${ms.empty}, .${ms.loading}, .${ms.artPlaceholder}`, `color: ${os(0.5)};`);
+	rule(`.${ms.eyebrow}, .${ms.letter}`, `color: ${accent};`);
+	rule(`.${ms.pill}`, `background: ${os(0.08)}; color: ${onSurface};`);
+	rule(`.${ms.pillPrimary}`, `background: ${accent}; color: ${onAccent};`);
+	rule(`.${ms.pill}:focus`, `background: ${buttonFocused}; border-color: ${focusColor}; color: ${buttonInk};`);
+	rule(`.${ms.pill} .${ms.accentIcon}`, `fill: ${accent};`);
+	rule(`.${ms.rail}`, `background: ${os(0.05)};`);
+	rule(`.${ms.railLetter}`, `color: ${os(0.7)};`);
+	rule(`.${ms.railLetter}.${ms.railCurrent}`, `color: ${accent};`);
+	rule(`.${ms.railLetter}:focus, .${ms.mix}:focus, .${ms.station}:focus`, `box-shadow: 0 0 0 3px ${focusColor};`);
+	rule(`.${ms.albumPanel}, .${ms.shelfPlaceholder}, .${ms.playlistArt}, .${ms.detailArt}`, `background: ${os(0.06)};`);
+	rule(`.${ms.caret}`, `border-bottom-color: ${os(0.06)};`);
+	rule(`.${ms.mixAccent}`, `background: ${accent}; color: ${onAccent};`);
+	rule(`.${ms.playlistShown}`, `background: ${accentA(0.16)};`);
+	rule(`.${ms.playlistRow}:focus`, `background: ${os(0.12)}; box-shadow: inset 0 0 0 3px ${focusColor};`);
+	// Classic's chips over a category screen. The Classic overview's own chips are left as they are.
+	const chip = musicChipsCss.chip;
+	rule(`.${ms.screenChips} .${chip}`, `background: ${os(0.09)}; color: ${os(0.8)};`);
+	rule(`.${ms.screenChips} .${ms.chipCurrent}:not(:focus)`, `background: ${accentA(0.16)}; color: ${accent};`);
+	rule(`.${ms.screenChips} .${chip}:focus`, `background: ${accent}; border-color: ${accent}; color: ${onAccent}; box-shadow: 0 0 14px 1px ${accentA(0.45)};`);
+
+	// The music Sort & Filter panel and the Albums genre list, which share its rows.
+	const mf = musicFilterCss;
+	rule(`.${mf.overlay}`, `background: ${scrim(0.45)};`);
+	rule(`.${mf.panel}`, `background: ${surfaceA(0.92)}; border-color: ${os(0.08)};`);
+	rule(`.${mf.title}, .${mf.optionActive}`, `color: ${onSurface};`);
+	rule(`.${mf.option}`, `color: ${os(0.8)};`);
+	rule(`.${mf.option}:focus`, `background: ${os(0.1)}; border-color: ${focusColor}; color: ${onSurface};`);
+	rule(`.${mf.radio}, .${mf.check}`, `border-color: ${os(0.35)};`);
+	rule(`.${mf.optionActive} .${mf.radio}`, `border-color: ${accent};`);
+	rule(`.${mf.optionActive} .${mf.check}`, `border-color: ${accent}; background: ${accent};`);
+	rule(`.${mf.radioFill}`, `background: ${accent};`);
 
 	// Detail screens, nouveau layout
 	rule(`.${nouveauCardsCss.card}:focus, .${nouveauCardsCss.landscapeDetails}:focus, .${nouveauCardsCss.person}:focus .${nouveauCardsCss.avatar}`, `border-color: ${focusColor};`);
@@ -506,7 +550,7 @@ export const buildThemeOverrideCss = (theme, options = {}) => {
 		// Artists stay round whatever corners the theme gives the other cards.
 		if (cardCss.circle) rule(`.${cardCss.circle} .${cardCss.image}, .${cardCss.circle} .${cardCss.placeholder}, .${cardCss.circle} .${cardCss.imageContainer}`, 'border-radius: 50%;');
 		rule(`.${cardCss.image}, .${cardCss.placeholder}`, `border: ${b.cardBorder.width}px solid ${toCssColor(b.cardBorder.color)};`);
-		rule(`.${cardCss.card}:focus .${cardCss.image}`, `border-color: ${focusColor}; border-width: 4px; box-shadow: ${glowOr('0 8px 24px rgba(0, 0, 0, 0.6)')};`);
+		rule(`.${cardCss.card}:focus .${cardCss.image}, .${cardCss.card}:focus .${cardCss.placeholder}`, `border-color: ${focusColor}; border-width: 4px; box-shadow: ${glowOr('0 8px 24px rgba(0, 0, 0, 0.6)')};`);
 		rule(`.${cardCss.previewFrame}`, `border-radius: ${cardRadius};`);
 		rule(`.${cardCss.previewRing}`, `border-color: ${focusColor}; border-radius: ${cardRadius}; box-shadow: ${glowOr('0 8px 24px rgba(0, 0, 0, 0.6)')};`);
 		// The Fire TV WebView only shows a video it can put on its own hardware plane and a

@@ -7,6 +7,8 @@ import {VirtualGridList} from '@enact/sandstone/VirtualList';
 import {useAuth} from '../../context/AuthContext';
 import {createApiForServer} from '../../services/jellyfinApi';
 import MusicBrowse from '../MusicBrowse';
+import MusicCategoryScreen from '../MusicBrowse/MusicCategoryScreen';
+import {musicScreenFor} from '../MusicBrowse/musicScreens';
 import BookBrowse from '../BookBrowse';
 import BackdropLayer from '../../components/BackdropLayer';
 import TileGrid from '../../components/TileGrid';
@@ -53,9 +55,6 @@ const MUSIC_CONTENT_TYPES = [
 	{key: 'genres', label: $L('Genres'), itemType: 'MusicGenre'}
 ];
 
-// Every favorite in a music library, whatever its type.
-const FAVORITE_ITEMS = 'favoriteItems';
-
 const MUSIC_TITLES = {
 	albums: () => $L('Albums'),
 	albumArtists: () => $L('Album Artists'),
@@ -84,6 +83,8 @@ let returnTo = null;
 // The same for a book grid the item was opened from, so Back comes to the grid rather than the
 // book library.
 let bookGridReturn = null;
+// And for the music screen an item was opened or played from.
+let musicScreenReturn = null;
 
 const PLAYED_FILTERS = [
 	{key: 'all', label: $L('All')},
@@ -270,7 +271,12 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 	const isMusicLibrary = library?.CollectionType?.toLowerCase() === 'music';
 	const isBookLibrary = isBookLibraryType(library?.CollectionType);
 	const [restoredBookGrid] = useState(() => (bookGridReturn?.libraryId === library?.Id ? bookGridReturn : null));
-	useEffect(() => { bookGridReturn = null; }, []);
+	// The music category screen that's open, from musicScreenFor.
+	const [musicScreen, setMusicScreen] = useState(() => (musicScreenReturn?.libraryId === library?.Id ? musicScreenReturn.screen : null));
+	useEffect(() => {
+		bookGridReturn = null;
+		musicScreenReturn = null;
+	}, []);
 	const isSeriesLibrary = library?.CollectionType?.toLowerCase() === 'tvshows';
 	const isPlaylistLibrary = library?.CollectionType?.toLowerCase() === 'playlists';
 	const isSquareDefault = isMusicLibrary || isPlaylistLibrary;
@@ -353,10 +359,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 	const isBookBrowseHome = isBookLibrary && !isFilterMode && !isFolderView && !bookGridView;
 	const isBrowseHome = isMusicBrowseHome || isBookBrowseHome;
 	const isSongs = isMusicLibrary && musicContentType === 'songs';
-	// The music favorites grids are favorites by definition, so the filter is pinned on and left
-	// out of the panel and out of what's saved.
-	const pinnedFavorites = musicGridView === 'favorites' || musicGridView === FAVORITE_ITEMS;
-	const favoritesOnly = pinnedFavorites || filters.favoritesOnly;
+	const favoritesOnly = filters.favoritesOnly;
 
 	const isMovieLibrary = library?.CollectionType?.toLowerCase() === 'movies';
 	const canGroup = (isMovieLibrary || isSeriesLibrary) && !isFolderView;
@@ -457,8 +460,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 			case 'music':
 			{
 				const mc = MUSIC_CONTENT_TYPES.find(c => c.key === musicContentType);
-				if (mc) return mc.itemType;
-				return musicContentType === FAVORITE_ITEMS ? '' : 'MusicAlbum';
+				return mc ? mc.itemType : 'MusicAlbum';
 			}
 			case 'musicvideos':
 				return 'MusicVideo';
@@ -802,19 +804,35 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 		};
 	}, [isGenreMode, effectiveApi]);
 
-	// Favorites is the albums grid with the filter on rather than a type of its own, and every
-	// favorite is the same filter over every type. A genre tile opens the albums grid narrowed
-	// to its genre.
 	const handleOpenMusicGrid = useCallback((target, genre) => {
 		if (!target) return;
 		setMusicGridView(target);
-		setMusicContentType(target === 'favorites' ? 'albums' : target);
+		setMusicContentType(target);
 		setOpenedGenre(genre || null);
 		setAllItems([]);
 		apiFetchIndexRef.current = 0;
 		initialFocusDoneRef.current = false;
 		landedRef.current = false;
 	}, []);
+
+	// The music categories and See All links open their own screens. A genre tile still opens the
+	// albums grid narrowed to it, and the Songs screen opens the full songs grid, which Back leaves
+	// for the screen.
+	const handleOpenMusicCategory = useCallback((target, genre) => {
+		const screen = genre ? null : musicScreenFor(target);
+		if (screen) setMusicScreen(screen);
+		else handleOpenMusicGrid(target, genre);
+	}, [handleOpenMusicGrid]);
+	const handleOpenSongsGrid = useCallback(() => handleOpenMusicGrid('songs'), [handleOpenMusicGrid]);
+	const handleCloseMusicScreen = useCallback(() => setMusicScreen(null), []);
+	const handleMusicScreenSelect = useCallback((item) => {
+		musicScreenReturn = {libraryId, screen: musicScreen};
+		onSelectItem?.(item);
+	}, [libraryId, musicScreen, onSelectItem]);
+	const handleMusicScreenPlay = useCallback((item, resume, options) => {
+		musicScreenReturn = {libraryId, screen: musicScreen};
+		onPlay?.(item, resume, options);
+	}, [libraryId, musicScreen, onPlay]);
 
 	// The book library's See All and its series, genre and folder cards. A series with no folder of
 	// its own is looked for by name, and a folder series opens at its folder with Back going home.
@@ -854,10 +872,11 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 			} else {
 				returnTo = {libraryId, itemId: item.Id, index, folderStack};
 				bookGridReturn = bookGridView ? {libraryId, view: bookGridView, genre: openedGenre, search: searchQuery} : null;
+				musicScreenReturn = musicScreen ? {libraryId, screen: musicScreen} : null;
 				onSelectItem?.(item);
 			}
 		}
-	}, [isFolderView, onSelectItem, onViewPhoto, libraryId, bookGridView, folderStack, openedGenre, searchQuery, handleOpenBookGrid]);
+	}, [isFolderView, onSelectItem, onViewPhoto, libraryId, bookGridView, folderStack, openedGenre, searchQuery, handleOpenBookGrid, musicScreen]);
 
 	const {getScrollTo: getGridScrollTo, quickReturn, scrollTo: scrollGridTo} = useQuickReturnGrid('library-grid');
 
@@ -1535,7 +1554,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 	// Plex can't filter on series status, likes, subtitles, trailers, extras, theme media, 3D or disc source.
 	const onPlex = libraryServerType === 'plex';
 	const supported = (options) => options.filter(o => (!o.jellyfinOnly || libraryServerType !== 'emby') && !(onPlex && o.plexless));
-	const musicTitle = !musicGridView ? null : pinnedFavorites ? $L('Favorites') : MUSIC_TITLES[musicContentType]?.();
+	const musicTitle = musicGridView ? MUSIC_TITLES[musicContentType]?.() : null;
 	const displayName = genreFilter || studioFilter || musicTitle || library?.Name || '';
 	const titleProps = {isFolderView, folderStack, rootName: library?.Name, displayName, shownCount, onBreadcrumb: handleFolderBreadcrumb};
 	const genreLibraryName = genreLibraries.find((lib) => lib.Id === parentId)?.Name || null;
@@ -1581,6 +1600,24 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 		);
 	}
 
+	if (isMusicBrowseHome && musicScreen) {
+		return (
+			<MusicCategoryScreen
+				screen={musicScreen}
+				library={library}
+				api={effectiveApi}
+				serverUrl={effectiveServerUrl}
+				onSelectItem={handleMusicScreenSelect}
+				onPlay={handleMusicScreenPlay}
+				onBack={handleCloseMusicScreen}
+				onOpenScreen={setMusicScreen}
+				onOpenSongsGrid={handleOpenSongsGrid}
+				onSearch={onSearch}
+				backHandlerRef={backHandlerRef}
+			/>
+		);
+	}
+
 	if (isMusicBrowseHome) {
 		return (
 			<MusicBrowse
@@ -1588,7 +1625,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 				api={effectiveApi}
 				serverUrl={effectiveServerUrl}
 				onSelectItem={onSelectItem}
-				onOpenGrid={handleOpenMusicGrid}
+				onOpenGrid={handleOpenMusicCategory}
 				onPlay={onPlay}
 				onSearch={onSearch}
 				onHome={onHome}
@@ -1849,7 +1886,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
 							}))
 						))}
 
-						{!pinnedFavorites && renderSection('favorites', $L('Filters'), filters.favoritesOnly ? $L('Favorites') : null, () => renderCheckRow({
+						{renderSection('favorites', $L('Filters'), filters.favoritesOnly ? $L('Favorites') : null, () => renderCheckRow({
 							label: $L('Favorites'),
 							checked: filters.favoritesOnly,
 							spotlightId: 'filter-favorites',
