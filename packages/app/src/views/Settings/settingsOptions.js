@@ -342,12 +342,6 @@ export const getServerSortOptions = () => [
 	{ value: 'added', label: $L('Date Added') }
 ];
 
-export const getFolderViewModeOptions = () => [
-	{ value: 'local', label: $L('Per Library') },
-	{ value: 'on', label: $L('Always on.') },
-	{ value: 'off', label: $L('Always Off') }
-];
-
 export const getContinueWatchingDefaultActionOptions = () => [
 	{ value: 'details', label: $L('Go to Details') },
 	{ value: 'play', label: $L('Play immediately') }

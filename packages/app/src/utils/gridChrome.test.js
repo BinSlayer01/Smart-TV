@@ -1,6 +1,6 @@
 import Spotlight from '@enact/spotlight';
 
-import {capitalize, createGridKeyDown, createPanelKeyDown, createRowsLeftKeyDown, createToolbarKeyDown, cycleValue, filterByStartLetter, pageGrid, stopPropagation} from './gridChrome';
+import {capitalize, createGridKeyDown, createPanelKeyDown, createRowsLeftKeyDown, createToolbarKeyDown, cycleValue, filterByStartLetter, libraryPosterSize, matchesStartLetter, pageGrid, stopPropagation} from './gridChrome';
 import {KEYS} from './keys';
 
 jest.mock('@enact/spotlight', () => ({__esModule: true, default: {focus: jest.fn()}}));
@@ -256,7 +256,7 @@ describe('createPanelKeyDown', () => {
 	});
 });
 
-describe('filterByStartLetter', () => {
+describe('matchesStartLetter', () => {
 	const items = [
 		{SortName: 'Alien'},
 		{SortName: 'alien 3'},
@@ -264,34 +264,35 @@ describe('filterByStartLetter', () => {
 		{SortName: '2001'},
 		{SortName: 'Ω Project'}
 	];
+	const under = (list, letter) => list.filter((item) => matchesStartLetter(item, letter));
 
 	test('no letter picked leaves the list as it was', () => {
 		expect(filterByStartLetter(items, null)).toBe(items);
 	});
 
 	test('matches on the first letter whatever the case', () => {
-		expect(filterByStartLetter(items, 'A')).toEqual([{SortName: 'Alien'}, {SortName: 'alien 3'}]);
+		expect(under(items, 'A')).toEqual([{SortName: 'Alien'}, {SortName: 'alien 3'}]);
 	});
 
 	// Hash is the catch all at the front of the strip, so everything the alphabet can't
 	// reach has to land there or it becomes unreachable.
 	test('hash takes everything outside the latin alphabet', () => {
-		expect(filterByStartLetter(items, '#')).toEqual([{SortName: '2001'}, {SortName: 'Ω Project'}]);
+		expect(under(items, '#')).toEqual([{SortName: '2001'}, {SortName: 'Ω Project'}]);
 	});
 
 	test('falls back to the display name when the server sent no sort name', () => {
 		const noSortName = [{Name: 'Casablanca'}, {SortName: '', Name: 'Chinatown'}];
 
-		expect(filterByStartLetter(noSortName, 'C')).toEqual(noSortName);
+		expect(under(noSortName, 'C')).toEqual(noSortName);
 	});
 
 	test('an item with no name at all matches nothing', () => {
-		expect(filterByStartLetter([{}], '#')).toEqual([]);
-		expect(filterByStartLetter([{}], 'A')).toEqual([]);
+		expect(matchesStartLetter({}, '#')).toBe(false);
+		expect(matchesStartLetter({}, 'A')).toBe(false);
 	});
 
-	test('a letter nothing starts with comes back empty', () => {
-		expect(filterByStartLetter(items, 'Z')).toEqual([]);
+	test('a letter nothing starts with matches nothing', () => {
+		expect(under(items, 'Z')).toEqual([]);
 	});
 
 	// An accent doesn't make it a different word, and the viewer looking for it reaches for A
@@ -299,10 +300,35 @@ describe('filterByStartLetter', () => {
 	test('files an accented name under the letter under the accent', () => {
 		const accented = [{Name: 'Ángel'}, {Name: 'Øster'}, {Name: 'Łódź'}, {Name: '東京'}];
 
-		expect(filterByStartLetter(accented, 'A')).toEqual([{Name: 'Ángel'}]);
-		expect(filterByStartLetter(accented, 'O')).toEqual([{Name: 'Øster'}]);
-		expect(filterByStartLetter(accented, 'L')).toEqual([{Name: 'Łódź'}]);
-		expect(filterByStartLetter(accented, '#')).toEqual([{Name: '東京'}]);
+		expect(under(accented, 'A')).toEqual([{Name: 'Ángel'}]);
+		expect(under(accented, 'O')).toEqual([{Name: 'Øster'}]);
+		expect(under(accented, 'L')).toEqual([{Name: 'Łódź'}]);
+		expect(under(accented, '#')).toEqual([{Name: '東京'}]);
+	});
+});
+
+describe('libraryPosterSize', () => {
+	test('uses the size picked for library grids', () => {
+		expect(libraryPosterSize({libraryPosterSize: 'large', homeRowsPosterSize: 'small'}, false)).toBe('large');
+	});
+
+	test('a playlist library reads its own size', () => {
+		const settings = {libraryPosterSize: 'large', playlistPosterSize: 'small', homeRowsPosterSize: 'default'};
+
+		expect(libraryPosterSize(settings, true)).toBe('small');
+		expect(libraryPosterSize(settings, false)).toBe('large');
+	});
+
+	test('falls back to the home card size until one is picked', () => {
+		expect(libraryPosterSize({libraryPosterSize: null, homeRowsPosterSize: 'default'}, false)).toBe('medium');
+		expect(libraryPosterSize({libraryPosterSize: null, homeRowsPosterSize: 'xlarge'}, false)).toBe('extraLarge');
+		expect(libraryPosterSize({libraryPosterSize: null, homeRowsPosterSize: 'grandparents'}, false)).toBe('extraLarge');
+		expect(libraryPosterSize({playlistPosterSize: null, homeRowsPosterSize: 'small'}, true)).toBe('small');
+	});
+
+	test('anything it does not know reads as medium', () => {
+		expect(libraryPosterSize({libraryPosterSize: 'huge', homeRowsPosterSize: 'nonsense'}, false)).toBe('medium');
+		expect(libraryPosterSize({}, false)).toBe('medium');
 	});
 });
 

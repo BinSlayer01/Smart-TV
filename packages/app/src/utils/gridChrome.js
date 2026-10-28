@@ -1,7 +1,7 @@
 // The pieces the favorites, genres and library grids all share: the alphabet strip, the
-// arrow keys that carry focus in and out of the grid, and the settings each grid cycles
-// through. The key handlers are built once per view rather than per render, since the
-// only thing they close over is the id they were given.
+// arrow keys that carry focus in and out of the grid, and the library poster sizes. The key
+// handlers are built once per view rather than per render, since the only thing they close
+// over is the id they were given.
 
 import Spotlight from '@enact/spotlight';
 
@@ -12,22 +12,24 @@ export const LETTERS = ['#', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', '
 
 const LEADING_LETTER = /^[A-Z]/;
 
-// The alphabet strip filters on the name the server sorts by, falling back to the display
-// name when it sent no sort name. Accents fold away first, since an accent doesn't make it a
-// different word and the viewer looking for Ángel reaches for A. Hash collects everything
+// A letter on the alphabet strip matches the name the server sorts by, falling back to the
+// display name when it sent no sort name. Accents fold away first, since an accent doesn't make
+// it a different word and the viewer looking for Ángel reaches for A. Hash collects everything
 // that doesn't start with a letter, which is where numbers and non-latin titles land.
-export const filterByStartLetter = (items, startLetter) => {
-	if (!startLetter) return items;
-
-	return items.filter((item) => {
-		const name = foldAccents((item.SortName || item.Name || '').trim()).toUpperCase();
-		if (!name) return false;
-		if (startLetter === '#') return !LEADING_LETTER.test(name);
-		return name.indexOf(startLetter) === 0;
-	});
+export const matchesStartLetter = (item, letter) => {
+	const name = foldAccents((item.SortName || item.Name || '').trim()).toUpperCase();
+	if (!name) return false;
+	if (letter === '#') return !LEADING_LETTER.test(name);
+	return name.indexOf(letter) === 0;
 };
 
-// What the image and layout rows on the settings panel step through.
+// The favorites grid narrows itself to a letter rather than jumping to it.
+export const filterByStartLetter = (items, startLetter) => {
+	if (!startLetter) return items;
+	return items.filter((item) => matchesStartLetter(item, startLetter));
+};
+
+// The library grid sizes, under the names they sync by.
 export const IMAGE_SIZES = ['small', 'medium', 'large', 'extraLarge'];
 export const IMAGE_TYPES = ['poster', 'thumbnail'];
 export const GRID_DIRECTIONS = ['vertical', 'horizontal'];
@@ -37,6 +39,19 @@ export const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 export const stopPropagation = (e) => e.stopPropagation();
 
 export const cycleValue = (values, current) => values[(values.indexOf(current) + 1) % values.length];
+
+// The home card size calls two of these default and xlarge, and has a Grandparents size the
+// grids don't draw.
+const HOME_TO_GRID_SIZE = {default: 'medium', xlarge: 'extraLarge', grandparents: 'extraLarge'};
+
+// A library grid follows the home card size until a size is picked for library grids, and
+// playlist libraries keep a size of their own.
+export const libraryPosterSize = (settings, playlist) => {
+	const own = playlist ? settings.playlistPosterSize : settings.libraryPosterSize;
+	if (IMAGE_SIZES.includes(own)) return own;
+	const home = HOME_TO_GRID_SIZE[settings.homeRowsPosterSize] || settings.homeRowsPosterSize;
+	return IMAGE_SIZES.includes(home) ? home : 'medium';
+};
 
 // How far a focused card grows, matched in the stylesheets.
 export const FOCUS_SCALE = 1.05;

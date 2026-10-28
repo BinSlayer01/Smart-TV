@@ -352,6 +352,33 @@ describe('the library style', () => {
 	});
 });
 
+describe('the library grid settings', () => {
+	test('poster sizes sync under their own names, one for libraries and one for playlists', () => {
+		['small', 'medium', 'large', 'extraLarge'].forEach((size) => {
+			expect(profileToLocal({libraryPosterSize: size, playlistPosterSize: size})).toEqual({libraryPosterSize: size, playlistPosterSize: size});
+			expect(localToProfile({...defaultSettings, libraryPosterSize: size}, ['libraryPosterSize'])).toEqual({libraryPosterSize: size});
+		});
+	});
+
+	test('an unpicked poster size stays off the profile', () => {
+		expect(defaultSettings.libraryPosterSize).toBeNull();
+		expect(localToProfile(defaultSettings, ['libraryPosterSize', 'playlistPosterSize'])).toEqual({});
+		expect(profileToLocal({libraryPosterSize: 'grandparents'})).toEqual({});
+	});
+
+	test('titles under posters is on until turned off and syncs as it is', () => {
+		expect(defaultSettings.libraryCardTitles).toBe(true);
+		expect(profileToLocal({libraryCardTitles: false})).toEqual({libraryCardTitles: false});
+		expect(localToProfile({...defaultSettings, libraryCardTitles: false}, ['libraryCardTitles'])).toEqual({libraryCardTitles: false});
+	});
+
+	test('neither folder view nor the alphabet syncs', () => {
+		expect(SYNCABLE_KEYS).not.toContain('folderViewMode');
+		expect(SYNCABLE_KEYS).not.toContain('showAlphabeticalFilters');
+		expect(profileToLocal({enableFolderView: true})).toEqual({});
+	});
+});
+
 describe('the music library style', () => {
 	test('defaults to immersive', () => {
 		expect(defaultSettings.musicLibraryStyle).toBe('immersive');

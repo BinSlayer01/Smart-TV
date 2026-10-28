@@ -250,6 +250,12 @@ export const defaultSettings = {
 	cardFocusZoom: true,
 	useDetailedSubHeadings: true,
 	showMediaDetailsOnLibraryPage: true,
+	libraryCardTitles: true,
+	// Null until someone picks a size, so library grids follow the home card size.
+	libraryPosterSize: null,
+	playlistPosterSize: null,
+	// Not synced, so each device keeps its own.
+	showAlphabeticalFilters: false,
 	libraryStyle: 'classic',
 	bookLibraryStyle: 'bookstore',
 	musicLibraryStyle: 'immersive',
@@ -277,7 +283,6 @@ export const defaultSettings = {
 	detailUseSeriesThumbnails: false,
 	hideHomeMediaDescription: false,
 	homeRowOverlay: true,
-	folderViewMode: 'local',
 	excludedGenres: [],
 	autoAdvance: true,
 	autoAdvanceInterval: 8,

@@ -18,7 +18,6 @@ import {
 	getEnabledRatingSourcesSummary,
 	getFeaturedBarStyleOptions,
 	getFeaturedItemCountOptions,
-	getFolderViewModeOptions,
 	getGenresRowItemFilterOptions,
 	getHomeRowSortOptions, getPlaylistCollectionSortOptions,
 	getHomeBackdropStyleOptions,
@@ -393,7 +392,6 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.TOGGLE, key: 'showLiveTvButton', label: () => $L('Show Live TV Button'), desc: () => $L('Show the Live TV button in the navigation bar when the server has a Live TV library'), icon: 'live_tv'},
 					{kind: KIND.TOGGLE, key: 'showLibrariesInToolbar', label: () => $L('Show Libraries in Toolbar'), desc: () => $L('Show the libraries button in the navigation bar'), icon: 'video_library'},
 					{kind: KIND.TOGGLE, key: 'showSyncPlayButton', label: () => $L('SyncPlay Button'), desc: () => $L('Show the SyncPlay button on the navigation bar'), icon: 'groups'},
-					{kind: KIND.OPTION, key: 'folderViewMode', label: () => $L('Enable Folder View'), desc: () => $L('Show folder browsing option'), options: getFolderViewModeOptions, fallback: () => $L('Per Library'), icon: 'folder'},
 					{kind: KIND.TOGGLE, key: 'showSeerrButton', label: (ctx) => $L('Show {seerrLabel} Button').replace('{seerrLabel}', ctx.seerrLabel), desc: () => $L('Show the Seerr button in the navigation bar'), when: whenSeerr, icon: 'seerr'},
 					{kind: KIND.TOGGLE, key: 'showServerMessagesButton', label: () => $L('Show Messages Button'), desc: () => $L('Adds a button to the menu for messages sent by your server admin'), icon: 'info_outline_rounded'},
 					{kind: KIND.TOGGLE, key: 'showFriendsButton', label: () => $L('Show Friends Button'), desc: () => $L('Friends and chat from the Achievement Badges plugin'), icon: 'people_alt_rounded', when: (ctx) => ctx.achievements.socialAvailable}
@@ -605,6 +603,7 @@ export const SETTINGS_SCHEMA = [
 					{kind: KIND.OPTION, key: 'musicLibraryStyle', label: () => $L('Music Library Style'), desc: () => $L("Classic is the original rows under a Jump Back In card. Quick Access starts with a grid of your recent albums and playlists. Immersive leads with the album you're listening to."), options: getMusicLibraryStyleOptions, fallback: () => $L('Immersive'), icon: 'queue_music'},
 					{kind: KIND.TOGGLE, key: 'groupItemsIntoCollections', label: () => $L('Group Items into Collections'), desc: () => $L('Hide Collection associated library items when browsing libraries'), icon: 'collections_bookmark'},
 					{kind: KIND.TOGGLE, key: 'showMediaDetailsOnLibraryPage', label: () => $L('Show Media Details'), desc: () => $L('Show details of the selected item at the top of Library pages.'), icon: 'info_outline'},
+					{kind: KIND.TOGGLE, key: 'libraryCardTitles', label: () => $L('Titles Under Posters'), desc: () => $L("Show each item's title and details below its artwork in library grids."), icon: 'text_fields'},
 					{kind: KIND.TOGGLE, key: 'hideBackdropsInLibraries', label: () => $L('Library Backdrops'), icon: 'photo', isOn: (ctx) => !ctx.settings.hideBackdropsInLibraries},
 					{kind: KIND.TOGGLE, key: 'useDetailedSubHeadings', label: () => $L('Use Detailed Sub-Headings'), desc: () => $L('Show detailed or minimal subrow on Library pages.'), icon: 'subtitles'}
 				]

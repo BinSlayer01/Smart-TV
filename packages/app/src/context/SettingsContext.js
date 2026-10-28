@@ -64,7 +64,6 @@ const SERVER_TO_LOCAL = {
 	syncPlayEnabled: 'syncplayEnabled',
 	syncPlayAutoOpen: 'syncplayAutoOpen',
 	clockBehavior: 'showClock',
-	enableFolderView: 'folderViewMode',
 	homeRowInfoOverlay: 'homeRowOverlay',
 	autoplayNextEpisode: 'autoPlay',
 	mediaSegmentCountdown: 'nextUpCountdownStyle',
@@ -137,6 +136,8 @@ const oneOf = (values) => ({fromServer: v => (values.includes(v) ? v : undefined
 const POSTER_SIZES_TO_SERVER = {default: 'medium', xlarge: 'extraLarge'};
 const POSTER_SIZES_FROM_SERVER = {medium: 'default', extraLarge: 'xlarge'};
 const posterSizeFromServer = oneOf(['small', 'default', 'large', 'xlarge', 'grandparents']).fromServer;
+// Synced as is, unlike the home card sizes, and with no Grandparents size.
+const LIBRARY_POSTER_SIZES = ['small', 'medium', 'large', 'extraLarge'];
 
 const VALUE_CONVERSIONS = {
 	homeRowsPosterSize: {
@@ -185,6 +186,8 @@ const VALUE_CONVERSIONS = {
 	},
 	seasonalDensity: oneOf(SEASONAL_DENSITIES),
 	libraryStyle: oneOf(['classic', 'modern', 'docked']),
+	libraryPosterSize: oneOf(LIBRARY_POSTER_SIZES),
+	playlistPosterSize: oneOf(LIBRARY_POSTER_SIZES),
 	bookLibraryStyle: oneOf(['classic', 'readingRoom', 'bookstore']),
 	musicLibraryStyle: oneOf(['classic', 'quickAccess', 'immersive']),
 	keyboardStyle: oneOf(['native', 'classic', 'glass', 'docked']),
@@ -204,12 +207,6 @@ const VALUE_CONVERSIONS = {
 	// turning it off. There is nothing to draw for "off", so leave the mode we already have.
 	screensaverMode: {
 		fromServer: v => (v === 'off' ? undefined : v)
-	},
-	// Three states here against a boolean elsewhere. "Per Library" has no equivalent, so it
-	// declines to push and leaves whatever the server holds.
-	folderViewMode: {
-		toServer: v => (v === 'local' ? undefined : v === 'on'),
-		fromServer: v => (v ? 'on' : 'off')
 	},
 	nextUpTimeout: {
 		toServer: secondsToMs,
@@ -271,7 +268,7 @@ export const SYNCABLE_KEYS = [
 	'showRatingBadges',
 	'themeMusicEnabled', 'themeMusicVolume', 'themeMusicOnHomeRows',
 	'homeRowsImageType', 'homeRowImageTypes', 'showClock', 'clockDisplay',
-	'homeRowOverlay', 'folderViewMode',
+	'homeRowOverlay',
 	'excludedGenres',
 	'autoAdvance', 'autoAdvanceInterval',
 	'displayFavoritesRows', 'displayCollectionsRows', 'displayGenresRows', 'displayPlaylistsRows',
@@ -293,7 +290,8 @@ export const SYNCABLE_KEYS = [
 	'hideDetailsMediaDescription', 'detailUseSeriesThumbnails', 'hideHomeMediaDescription',
 	'personPageSortOption', 'personPageGroupItems',
 	'personalRatingStyle', 'recentlyReleasedSeriesType', 'mergeRecentRowsByType', 'playlistsGroupByType', 'groupItemsIntoCollections',
-	'useDetailedSubHeadings', 'showMediaDetailsOnLibraryPage', 'hideBackdropsInLibraries', 'libraryStyle', 'bookLibraryStyle', 'musicLibraryStyle',
+	'useDetailedSubHeadings', 'showMediaDetailsOnLibraryPage', 'libraryCardTitles', 'hideBackdropsInLibraries', 'libraryStyle', 'bookLibraryStyle', 'musicLibraryStyle',
+	'libraryPosterSize', 'playlistPosterSize',
 	'keyboardStyle',
 	'syncplayEnabled', 'syncplayAutoOpen',
 	'showSyncPlayButton',
